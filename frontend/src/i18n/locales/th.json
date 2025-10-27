@@ -1,0 +1,291 @@
+{
+  "common": {
+    "appName": "ระบบ Lost & Found",
+    "welcome": "ยินดีต้อนรับ",
+    "login": "เข้าสู่ระบบ",
+    "logout": "ออกจากระบบ",
+    "register": "สมัครสมาชิก",
+    "email": "อีเมล",
+    "password": "รหัสผ่าน",
+    "confirmPassword": "ยืนยันรหัสผ่าน",
+    "submit": "ส่งข้อมูล",
+    "cancel": "ยกเลิก",
+    "save": "บันทึก",
+    "delete": "ลบ",
+    "edit": "แก้ไข",
+    "search": "ค้นหา",
+    "filter": "กรอง",
+    "reset": "รีเซ็ต",
+    "loading": "กำลังโหลด...",
+    "error": "เกิดข้อผิดพลาด",
+    "success": "สำเร็จ",
+    "language": "ภาษา",
+    "thai": "ไทย",
+    "english": "English"
+  },
+  "nav": {
+    "home": "หน้าแรก",
+    "search": "ค้นหา",
+    "postItem": "ลงประกาศ",
+    "dashboard": "แดชบอร์ด",
+    "myItems": "ของของฉัน",
+    "chat": "แชท",
+    "messages": "ข้อความ",
+    "notifications": "การแจ้งเตือน",
+    "profile": "โปรไฟล์",
+    "admin": "ผู้ดูแลระบบ",
+    "darkMode": "โหมดมืด",
+    "lightMode": "โหมดสว่าง"
+  },
+  "auth": {
+    "loginTitle": "เข้าสู่ระบบ",
+    "registerTitle": "สมัครสมาชิก",
+    "emailPlaceholder": "ชื่อ.นามสกุล4ตัว@bu.ac.th",
+    "passwordPlaceholder": "รหัสผ่าน (ขั้นต่ำ 6 ตัวอักษร)",
+    "confirmPasswordPlaceholder": "ยืนยันรหัสผ่าน",
+    "emailRequired": "กรุณากรอกอีเมล",
+    "emailInvalid": "รูปแบบอีเมลไม่ถูกต้อง",
+    "emailFormat": "รูปแบบอีเมลต้องเป็น ชื่อ.นามสกุล4ตัว@bu.ac.th",
+    "emailExample": "ตัวอย่าง: zack.lona@bu.ac.th",
+    "passwordRequired": "กรุณากรอกรหัสผ่าน",
+    "passwordMinLength": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+    "passwordNotMatch": "รหัสผ่านไม่ตรงกัน",
+    "loginSuccess": "เข้าสู่ระบบสำเร็จ",
+    "registerSuccess": "สมัครสมาชิกสำเร็จ",
+    "loginError": "เข้าสู่ระบบไม่สำเร็จ",
+    "registerError": "สมัครสมาชิกไม่สำเร็จ",
+    "alreadyHaveAccount": "มีบัญชีอยู่แล้ว?",
+    "dontHaveAccount": "ยังไม่มีบัญชี?",
+    "clickLogin": "คลิกเพื่อเข้าสู่ระบบ",
+    "clickRegister": "คลิกเพื่อสมัครสมาชิก"
+  },
+  "home": {
+    "hero": {
+      "title": "ค้นหาของที่หายได้ง่ายๆ",
+      "subtitle": "ระบบ Lost & Found ที่จะช่วยให้คุณค้นหาของที่หายหรือประกาศของที่เจอได้อย่างรวดเร็วและปลอดภัย",
+      "searchPlaceholder": "ค้นหาสิ่งของ...",
+      "getStarted": "เริ่มต้นใช้งาน",
+      "learnMore": "เรียนรู้เพิ่มเติม"
+    },
+    "features": {
+      "title": "วิธีการใช้งาน",
+      "postItems": {
+        "title": "1. ลงประกาศของคุณ",
+        "description": "รายงานของหายหรือของที่เจอพร้อมรายละเอียด รูปภาพ และสถานที่"
+      },
+      "smartSearch": {
+        "title": "2. รับการจับคู่",
+        "description": "AI ของเราจะหาสิ่งของที่ตรงกันและแจ้งเตือนคุณโดยอัตโนมัติ"
+      },
+      "secureChat": {
+        "title": "3. ติดต่อและคืนของ",
+        "description": "แชทอย่างปลอดภัยกับผู้พบหรือเจ้าของเพื่อนัดคืนของ"
+      },
+      "notifications": {
+        "title": "แจ้งเตือนทันใจ",
+        "description": "รับการแจ้งเตือนเมื่อมีการจับคู่หรือข้อความใหม่"
+      }
+    },
+    "stats": {
+      "title": "สถิติ",
+      "totalItems": "สิ่งของทั้งหมด",
+      "foundItems": "คืนสู่เจ้าของแล้ว",
+      "activeUsers": "รายการที่ใช้งานอยู่",
+      "successRate": "อัตราความสำเร็จ"
+    },
+    "recentItems": {
+      "title": "ประกาศล่าสุด",
+      "viewAll": "ดูทั้งหมด"
+    }
+  },
+  "items": {
+    "type": {
+      "lost": "ของหาย",
+      "found": "เจอของ"
+    },
+    "actions": {
+      "foundItem": "เจอของแล้ว",
+      "returnedOwner": "คืนเจ้าของแล้ว",
+      "confirmFoundTitle": "ยืนยันว่าเจอของแล้ว",
+      "confirmReturnTitle": "ยืนยันการคืนเจ้าของ",
+      "confirmFoundMessage": "คุณเจอของแล้วใช่ไหม?",
+      "confirmReturnMessage": "คุณคืนเจ้าของเรียบร้อยแล้วใช่ไหม?",
+      "confirmFoundButton": "ยืนยัน เจอของแล้ว",
+      "confirmReturnButton": "ยืนยัน คืนเจ้าของแล้ว",
+      "successFound": "ยินดีด้วย! เจอของแล้ว",
+      "successReturn": "ยินดีด้วย! คืนเจ้าของเรียบร้อยแล้ว",
+      "deleteWillRemove": "รายการนี้จะถูกลบออกจากระบบ และผู้อื่นจะไม่สามารถดูได้อีกต่อไป",
+      "cannotUndo": "การดำเนินการนี้ไม่สามารถย้อนกลับได้",
+      "messageOwner": "ติดต่อเจ้าของ",
+      "contactSeller": "ติดต่อผู้ลงประกาศ"
+    },
+    "category": {
+      "electronics": "อุปกรณ์อิเล็กทรอนิกส์",
+      "documents": "เอกสาร",
+      "accessories": "เครื่องประดับ",
+      "bags": "กระเป๋า",
+      "clothing": "เสื้อผ้า",
+      "keys": "กุญแจ",
+      "wallet": "กระเป๋าเงิน",
+      "other": "อื่นๆ"
+    },
+    "status": {
+      "active": "กำลังหา",
+      "pending": "รอดำเนินการ",
+      "matched": "จับคู่แล้ว",
+      "resolved": "แก้ไขแล้ว"
+    },
+    "details": {
+      "title": "รายละเอียด",
+      "itemName": "ชื่อสิ่งของ",
+      "description": "รายละเอียด",
+      "category": "หมวดหมู่",
+      "location": "สถานที่",
+      "date": "วันที่",
+      "status": "สถานะ",
+      "contactOwner": "ติดต่อเจ้าของ",
+      "reportFound": "แจ้งพบสิ่งของ",
+      "editItem": "แก้ไขประกาศ",
+      "deleteItem": "ลบประกาศ",
+      "confirmDelete": "คุณแน่ใจหรือไม่ที่จะลบประกาศนี้?"
+    },
+    "post": {
+      "title": "ลงประกาศ",
+      "subtitle": "ช่วยเราคืนสิ่งของให้กับเจ้าของ",
+      "selectType": "เลือกประเภท",
+      "step1Title": "ข้อมูลพื้นฐาน",
+      "step2Title": "คำอธิบาย",
+      "step3Title": "สถานที่และวันที่",
+      "step4Title": "อัปโหลดรูปภาพ",
+      "itemType": "ประเภทสิ่งของ",
+      "itemNamePlaceholder": "เช่น iPhone 13 Pro, บัตรนักศึกษา",
+      "selectCategory": "-- เลือกหมวดหมู่ --",
+      "categoryHint": "เลือกหมวดหมู่ที่ตรงกับสิ่งของของคุณ",
+      "detailedDescription": "คำอธิบายโดยละเอียด",
+      "descriptionPlaceholder": "ให้รายละเอียดมากที่สุดเท่าที่จะเป็นไปได้ (สี, ยี่ห้อ, ลักษณะเด่น ฯลฯ)",
+      "characters": "ตัวอักษร",
+      "whereLost": "คุณทำหายที่ไหน?",
+      "whereFound": "คุณเจอที่ไหน?",
+      "whenLost": "คุณทำหายเมื่อไหร่?",
+      "whenFound": "คุณเจอเมื่อไหร่?",
+      "locationPlaceholder": "เช่น ห้องสมุดคณะวิศวกรรมศาสตร์ ชั้น 3",
+      "uploadImages": "รูปภาพ (ไม่บังคับ, สูงสุด 5 รูป)",
+      "clickUpload": "คลิกเพื่ออัปโหลดรูปภาพ",
+      "next": "ถัดไป",
+      "back": "ย้อนกลับ",
+      "submitButton": "ลงประกาศ",
+      "maxImages": "อนุญาตสูงสุด 5 รูปเท่านั้น",
+      "imageTooLarge": "ขนาดใหญ่เกินไป สูงสุด 5MB",
+      "fillRequired": "กรุณากรอกข้อมูลที่จำเป็นทั้งหมด",
+      "provideDescription": "กรุณาระบุคำอธิบาย",
+      "posting": "กำลังลงประกาศ...",
+      "success": "ลงประกาศสำเร็จ!",
+      "matchesFound": "พบ {{count}} รายการที่ตรงกัน!",
+      "error": "ลงประกาศไม่สำเร็จ"
+    },
+    "search": {
+      "title": "ค้นหาสิ่งของ",
+      "searchPlaceholder": "ค้นหาด้วยชื่อ, คำอธิบาย...",
+      "noResults": "ไม่พบผลลัพธ์",
+      "results": "ผลลัพธ์"
+    },
+    "myItems": {
+      "title": "ของของฉัน",
+      "noItems": "คุณยังไม่มีประกาศ",
+      "createFirst": "สร้างประกาศแรกของคุณ"
+    }
+  },
+  "chat": {
+    "title": "แชท",
+    "messages": "ข้อความ",
+    "noChats": "ยังไม่มีการสนทนา",
+    "noMessages": "ยังไม่มีข้อความ",
+    "startChat": "เริ่มแชท",
+    "startConversation": "เริ่มบทสนทนาเพื่อดูข้อความ",
+    "typePlaceholder": "พิมพ์ข้อความ...",
+    "send": "ส่ง",
+    "online": "ออนไลน์",
+    "offline": "ออฟไลน์",
+    "typing": "กำลังพิมพ์...",
+    "selectChat": "เลือกแชทเพื่อดูข้อความ",
+    "recently": "เมื่อเร็วๆ นี้"
+  },
+  "notifications": {
+    "title": "การแจ้งเตือน",
+    "noNotifications": "ไม่มีการแจ้งเตือน",
+    "allCaughtUp": "คุณอ่านครบทุกรายการแล้ว!",
+    "markAllRead": "ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว",
+    "markAsRead": "ทำเครื่องหมายว่าอ่านแล้ว",
+    "markReadSuccess": "ทำเครื่องหมายว่าอ่านแล้ว",
+    "viewItem": "ดูสิ่งของ",
+    "viewChat": "ดูแชท",
+    "markReadError": "ไม่สามารถทำเครื่องหมายว่าอ่านแล้ว",
+    "markAllReadSuccess": "ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว",
+    "markAllReadError": "ไม่สามารถทำเครื่องหมายทั้งหมด",
+    "deleteSuccess": "ลบการแจ้งเตือนแล้ว",
+    "deleteError": "ไม่สามารถลบการแจ้งเตือน",
+    "confirmDelete": "คุณแน่ใจหรือไม่ที่จะลบการแจ้งเตือนนี้?",
+    "fetchError": "ไม่สามารถโหลดการแจ้งเตือน",
+    "types": {
+      "match": "จับคู่",
+      "message": "ข้อความ",
+      "system": "ระบบ"
+    }
+  },
+  "profile": {
+    "title": "โปรไฟล์",
+    "personalInfo": "ข้อมูลส่วนตัว",
+    "username": "ชื่อผู้ใช้",
+    "email": "อีเมล",
+    "phone": "เบอร์โทร",
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "currentPassword": "รหัสผ่านปัจจุบัน",
+    "newPassword": "รหัสผ่านใหม่",
+    "confirmNewPassword": "ยืนยันรหัสผ่านใหม่",
+    "updateSuccess": "อัปเดตข้อมูลสำเร็จ",
+    "updateError": "อัปเดตข้อมูลไม่สำเร็จ",
+    "language": "ภาษา",
+    "notifications": "การแจ้งเตือน",
+    "emailNotifications": "แจ้งเตือนทางอีเมล",
+    "pushNotifications": "แจ้งเตือนแบบพุช"
+  },
+  "dashboard": {
+    "title": "แดชบอร์ด",
+    "overview": "ภาพรวม",
+    "myStats": "สถิติของฉัน",
+    "recentActivity": "กิจกรรมล่าสุด",
+    "quickActions": "การดำเนินการด่วน",
+    "viewMyItems": "ดูของของฉัน",
+    "checkMessages": "เช็คข้อความ",
+    "postNewItem": "ลงประกาศใหม่",
+    "viewNotifications": "ดูการแจ้งเตือน",
+    "myItemsCount": "รายการของฉัน",
+    "unreadMessages": "ข้อความที่ยังไม่ได้อ่าน",
+    "activeChats": "แชทที่กำลังใช้งาน"
+  },
+  "admin": {
+    "title": "ผู้ดูแลระบบ",
+    "users": "ผู้ใช้",
+    "items": "สิ่งของ",
+    "reports": "รายงาน",
+    "settings": "ตั้งค่า",
+    "manageUsers": "จัดการผู้ใช้",
+    "manageItems": "จัดการสิ่งของ",
+    "viewReports": "ดูรายงาน"
+  },
+  "footer": {
+    "title": "Lost & Found System",
+    "description": "ช่วยให้สิ่งของที่หายกลับคืนสู่เจ้าของผ่านระบบจับคู่อัจฉริยะและชุมชนที่ร่วมมือกัน",
+    "quickLinks": "ลิงก์ด่วน",
+    "home": "หน้าแรก",
+    "searchItems": "ค้นหาสิ่งของ",
+    "postItem": "ลงประกาศ",
+    "support": "ช่วยเหลือ",
+    "helpCenter": "ศูนย์ช่วยเหลือ",
+    "termsOfService": "ข้อกำหนดการใช้งาน",
+    "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+    "connect": "ติดต่อเรา",
+    "copyright": "© {{year}} Lost & Found System. สงวนลิขสิทธิ์"
+  }
+}
+

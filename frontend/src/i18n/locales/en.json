@@ -1,0 +1,291 @@
+{
+  "common": {
+    "appName": "Lost & Found System",
+    "welcome": "Welcome",
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "language": "Language",
+    "thai": "ไทย",
+    "english": "English"
+  },
+  "nav": {
+    "home": "Home",
+    "search": "Search",
+    "postItem": "Post Item",
+    "dashboard": "Dashboard",
+    "myItems": "My Items",
+    "chat": "Chat",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "admin": "Admin",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode"
+  },
+  "auth": {
+    "loginTitle": "Login",
+    "registerTitle": "Register",
+    "emailPlaceholder": "firstname.lastname4@bu.ac.th",
+    "passwordPlaceholder": "Password (min 6 characters)",
+    "confirmPasswordPlaceholder": "Confirm Password",
+    "emailRequired": "Email is required",
+    "emailInvalid": "Invalid email format",
+    "emailFormat": "Email format must be firstname.lastname4@bu.ac.th",
+    "emailExample": "Example: zack.lona@bu.ac.th",
+    "passwordRequired": "Password is required",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "passwordNotMatch": "Passwords do not match",
+    "loginSuccess": "Login successful",
+    "registerSuccess": "Registration successful",
+    "loginError": "Login failed",
+    "registerError": "Registration failed",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "clickLogin": "Click to login",
+    "clickRegister": "Click to register"
+  },
+  "home": {
+    "hero": {
+      "title": "Reunite Lost Items with Their Owners",
+      "subtitle": "A smart platform to report, search, and match lost & found items with intelligent matching technology",
+      "searchPlaceholder": "Search for items...",
+      "getStarted": "Get Started",
+      "learnMore": "Learn More"
+    },
+    "features": {
+      "title": "How It Works",
+      "postItems": {
+        "title": "1. Post Your Item",
+        "description": "Report your lost or found item with details, photos, and location"
+      },
+      "smartSearch": {
+        "title": "2. Get Matched",
+        "description": "Our AI finds potential matches and notifies you automatically"
+      },
+      "secureChat": {
+        "title": "3. Connect & Return",
+        "description": "Chat securely with the finder or owner to arrange return"
+      },
+      "notifications": {
+        "title": "Real-time Notifications",
+        "description": "Get notified when there's a match or new message"
+      }
+    },
+    "stats": {
+      "title": "Statistics",
+      "totalItems": "Total Items",
+      "foundItems": "Returned",
+      "activeUsers": "Active",
+      "successRate": "Success Rate"
+    },
+    "recentItems": {
+      "title": "Recent Items",
+      "viewAll": "View All"
+    }
+  },
+  "items": {
+    "type": {
+      "lost": "Lost",
+      "found": "Found"
+    },
+    "actions": {
+      "foundItem": "Found Item",
+      "returnedOwner": "Returned to Owner",
+      "confirmFoundTitle": "Confirm Item Found",
+      "confirmReturnTitle": "Confirm Return to Owner",
+      "confirmFoundMessage": "Have you found the item?",
+      "confirmReturnMessage": "Have you returned it to the owner?",
+      "confirmFoundButton": "Confirm Found",
+      "confirmReturnButton": "Confirm Returned",
+      "successFound": "Congratulations! Item found",
+      "successReturn": "Congratulations! Item returned successfully",
+      "deleteWillRemove": "This listing will be removed from the system and others will not be able to view it anymore",
+      "cannotUndo": "This action cannot be undone",
+      "messageOwner": "Message Owner",
+      "contactSeller": "Contact Poster"
+    },
+    "category": {
+      "electronics": "Electronics",
+      "documents": "Documents",
+      "accessories": "Accessories",
+      "bags": "Bags",
+      "clothing": "Clothing",
+      "keys": "Keys",
+      "wallet": "Wallet",
+      "other": "Other"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "matched": "Matched",
+      "resolved": "Resolved"
+    },
+    "details": {
+      "title": "Details",
+      "itemName": "Item Name",
+      "description": "Description",
+      "category": "Category",
+      "location": "Location",
+      "date": "Date",
+      "status": "Status",
+      "contactOwner": "Contact Owner",
+      "reportFound": "Report Found",
+      "editItem": "Edit Item",
+      "deleteItem": "Delete Item",
+      "confirmDelete": "Are you sure you want to delete this item?"
+    },
+    "post": {
+      "title": "Post an Item",
+      "subtitle": "Help us reunite items with their owners",
+      "selectType": "Select Type",
+      "step1Title": "Basic Information",
+      "step2Title": "Description",
+      "step3Title": "Location & Date",
+      "step4Title": "Upload Images",
+      "itemType": "Item Type",
+      "itemNamePlaceholder": "e.g., iPhone 13 Pro, Student ID Card",
+      "selectCategory": "-- Select a category --",
+      "categoryHint": "Choose the category that best matches your item",
+      "detailedDescription": "Detailed Description",
+      "descriptionPlaceholder": "Provide as much detail as possible (color, brand, distinguishing features, etc.)",
+      "characters": "characters",
+      "whereLost": "Where did you lose it?",
+      "whereFound": "Where did you find it?",
+      "whenLost": "When did you lose it?",
+      "whenFound": "When did you find it?",
+      "locationPlaceholder": "e.g., Engineering Library, 3rd Floor",
+      "uploadImages": "Images (Optional, up to 5)",
+      "clickUpload": "Click to upload images",
+      "next": "Next",
+      "back": "Back",
+      "submitButton": "Post Item",
+      "maxImages": "Maximum 5 images allowed",
+      "imageTooLarge": "is too large. Max size is 5MB",
+      "fillRequired": "Please fill in all required fields",
+      "provideDescription": "Please provide a description",
+      "posting": "Posting...",
+      "success": "Item posted successfully!",
+      "matchesFound": "Found {{count}} potential matches!",
+      "error": "Failed to post item"
+    },
+    "search": {
+      "title": "Search Items",
+      "searchPlaceholder": "Search by name, description...",
+      "noResults": "No results found",
+      "results": "Results"
+    },
+    "myItems": {
+      "title": "My Items",
+      "noItems": "You don't have any items yet",
+      "createFirst": "Create your first post"
+    }
+  },
+  "chat": {
+    "title": "Chat",
+    "messages": "Messages",
+    "noChats": "No conversations yet",
+    "noMessages": "No messages yet",
+    "startChat": "Start Chat",
+    "startConversation": "Start a conversation to see messages",
+    "typePlaceholder": "Type a message...",
+    "send": "Send",
+    "online": "Online",
+    "offline": "Offline",
+    "typing": "Typing...",
+    "selectChat": "Select a chat to view messages",
+    "recently": "Recently"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "noNotifications": "No notifications",
+    "allCaughtUp": "You're all caught up!",
+    "markAllRead": "Mark All as Read",
+    "markAsRead": "Mark as read",
+    "markReadSuccess": "Marked as read",
+    "viewItem": "View Item",
+    "viewChat": "View Chat",
+    "markReadError": "Failed to mark as read",
+    "markAllReadSuccess": "All notifications marked as read",
+    "markAllReadError": "Failed to mark all as read",
+    "deleteSuccess": "Notification deleted",
+    "deleteError": "Failed to delete notification",
+    "confirmDelete": "Are you sure you want to delete this notification?",
+    "fetchError": "Failed to load notifications",
+    "types": {
+      "match": "Match",
+      "message": "Message",
+      "system": "System"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "personalInfo": "Personal Information",
+    "username": "Username",
+    "email": "Email",
+    "phone": "Phone",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "Failed to update profile",
+    "language": "Language",
+    "notifications": "Notifications",
+    "emailNotifications": "Email Notifications",
+    "pushNotifications": "Push Notifications"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": "Overview",
+    "myStats": "My Statistics",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions",
+    "viewMyItems": "View My Items",
+    "checkMessages": "Check Messages",
+    "postNewItem": "Post New Item",
+    "viewNotifications": "View Notifications",
+    "myItemsCount": "My Items",
+    "unreadMessages": "Unread Messages",
+    "activeChats": "Active Chats"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "users": "Users",
+    "items": "Items",
+    "reports": "Reports",
+    "settings": "Settings",
+    "manageUsers": "Manage Users",
+    "manageItems": "Manage Items",
+    "viewReports": "View Reports"
+  },
+  "footer": {
+    "title": "Lost & Found System",
+    "description": "Helping reunite lost items with their owners through intelligent matching and community support.",
+    "quickLinks": "Quick Links",
+    "home": "Home",
+    "searchItems": "Search Items",
+    "postItem": "Post Item",
+    "support": "Support",
+    "helpCenter": "Help Center",
+    "termsOfService": "Terms of Service",
+    "privacyPolicy": "Privacy Policy",
+    "connect": "Connect",
+    "copyright": "© {{year}} Lost & Found System. All rights reserved"
+  }
+}
+
