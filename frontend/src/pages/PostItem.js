@@ -180,6 +180,7 @@ const PostItem = () => {
                     onChange={handleChange}
                     className="input-field"
                     placeholder={t('items.post.itemNamePlaceholder')}
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -238,6 +239,7 @@ const PostItem = () => {
                     onChange={handleChange}
                     className="input-field h-32"
                     placeholder={t('items.post.descriptionPlaceholder')}
+                    autoComplete="off"
                     required
                   />
                   <p className="text-sm text-gray-500 mt-1">
@@ -272,6 +274,7 @@ const PostItem = () => {
                     onChange={handleChange}
                     className="input-field"
                     placeholder={t('items.post.locationPlaceholder')}
+                    autoComplete="off"
                     required
                   />
                 </div>

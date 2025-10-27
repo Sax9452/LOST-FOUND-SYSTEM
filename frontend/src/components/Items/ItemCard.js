@@ -31,9 +31,9 @@ const ItemCard = ({ item }) => {
   };
 
   return (
-    <Link to={`/items/${item.id}`} className="card hover:shadow-lg transition-shadow duration-200 group">
-      {/* Image - เพิ่มความสูงเป็น h-64 (256px) */}
-      <div className="relative h-64 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden mb-4">
+    <Link to={`/items/${item.id}`} className="card hover:shadow-lg transition-shadow duration-200 group flex flex-col h-full">
+      {/* Image - ความสูงคงที่ 300px */}
+      <div className="relative h-[300px] bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-lg overflow-hidden mb-4 flex-shrink-0">
         {item.images && item.images.length > 0 && !imageError ? (
           <>
             {imageLoading && (
@@ -44,7 +44,7 @@ const ItemCard = ({ item }) => {
             <img
               src={getImageUrl(item.images[0])}
               alt={item.name}
-              className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+              className={`w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-105 ${
                 imageLoading ? 'opacity-0' : 'opacity-100'
               }`}
               onLoad={() => setImageLoading(false)}

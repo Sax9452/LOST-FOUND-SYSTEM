@@ -139,6 +139,7 @@ const Profile = () => {
                     value={profileData.username}
                     onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
                     className="input-field pl-10"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -167,6 +168,7 @@ const Profile = () => {
                     onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                     className="input-field pl-10"
                     placeholder="Optional"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -181,6 +183,7 @@ const Profile = () => {
                     onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
                     className="input-field pl-10"
                     placeholder="City, Country"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -222,6 +225,7 @@ const Profile = () => {
                     value={passwordData.currentPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                     className="input-field pl-10"
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -236,6 +240,7 @@ const Profile = () => {
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                     className="input-field pl-10"
+                    autoComplete="new-password"
                     minLength={6}
                     required
                   />
@@ -251,6 +256,7 @@ const Profile = () => {
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                     className="input-field pl-10"
+                    autoComplete="new-password"
                     required
                   />
                 </div>

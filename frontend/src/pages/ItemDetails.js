@@ -118,7 +118,7 @@ const ItemDetails = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Images */}
           <div>
@@ -128,7 +128,7 @@ const ItemDetails = () => {
                   <img
                     src={`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${item.images[selectedImage]}`}
                     alt={item.name}
-                    className="w-full h-96 object-cover rounded-lg mb-4"
+                    className="w-full h-[500px] object-cover rounded-lg mb-4"
                   />
                   {item.images.length > 1 && (
                     <div className="grid grid-cols-5 gap-2">
@@ -147,7 +147,7 @@ const ItemDetails = () => {
                   )}
                 </>
               ) : (
-                <div className="w-full h-96 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                <div className="w-full h-[500px] bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                   <FiTag className="w-24 h-24 text-gray-400" />
                 </div>
               )}

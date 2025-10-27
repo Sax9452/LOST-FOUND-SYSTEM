@@ -113,6 +113,7 @@ const Register = () => {
                   onChange={handleChange}
                   className="input-field pl-10"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   required
                   minLength={6}
                 />
@@ -135,6 +136,7 @@ const Register = () => {
                   onChange={handleChange}
                   className="input-field pl-10"
                   placeholder="••••••••"
+                  autoComplete="new-password"
                   required
                 />
               </div>

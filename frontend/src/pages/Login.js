@@ -74,6 +74,7 @@ const Login = () => {
                   onChange={handleChange}
                   className="input-field pl-10"
                   placeholder="••••••••"
+                  autoComplete="off"
                   required
                 />
               </div>

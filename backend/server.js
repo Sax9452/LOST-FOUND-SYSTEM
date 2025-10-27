@@ -33,14 +33,18 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
+      imgSrc: ["'self'", "data:", "blob:", "http://localhost:3000", "http://localhost:5000"],
       scriptSrc: ["'self'"],
-      connectSrc: ["'self'", process.env.FRONTEND_URL || 'http://localhost:3000'],
+      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5000", "ws://localhost:5000"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
     },
   },
+  
+  // Cross-Origin policies for images
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   
   // HTTP Strict Transport Security (force HTTPS in production)
   hsts: {
@@ -72,6 +76,11 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Permissions-Policy', 'geolocation=(self), microphone=(), camera=()');
+  
+  // Allow cross-origin for images (fix CORS for uploads)
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   // HSTS in production
   if (process.env.NODE_ENV === 'production') {
@@ -113,7 +122,6 @@ app.use('/api/items', require('./routes/items'));
 app.use('/api/chats', require('./routes/chat')); // Changed to /chats (plural)
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
-app.use('/api/test', require('./routes/test')); // Test routes
 
 // Health check
 app.get('/api/health', (req, res) => {

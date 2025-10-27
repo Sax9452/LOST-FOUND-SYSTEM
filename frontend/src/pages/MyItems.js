@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { itemService } from '../api/services';
 import ItemCard from '../components/Items/ItemCard';
 import { FiFilter } from 'react-icons/fi';
@@ -13,9 +13,17 @@ const MyItems = () => {
     fetchMyItems();
   }, []);
 
+  const filterItems = useCallback(() => {
+    if (filter === 'all') {
+      setFilteredItems(items);
+    } else {
+      setFilteredItems(items.filter(item => item.status === filter));
+    }
+  }, [filter, items]);
+
   useEffect(() => {
     filterItems();
-  }, [filter, items]);
+  }, [filterItems]);
 
   const fetchMyItems = async () => {
     try {
@@ -25,14 +33,6 @@ const MyItems = () => {
       console.error('Error fetching items:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const filterItems = () => {
-    if (filter === 'all') {
-      setFilteredItems(items);
-    } else {
-      setFilteredItems(items.filter(item => item.status === filter));
     }
   };
 
@@ -77,7 +77,7 @@ const MyItems = () => {
           <div className="spinner"></div>
         </div>
       ) : filteredItems.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredItems.map(item => (
             <ItemCard key={item.id} item={item} />
           ))}

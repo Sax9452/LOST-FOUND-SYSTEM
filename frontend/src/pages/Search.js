@@ -111,6 +111,7 @@ const Search = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input-field pl-10"
               placeholder="Search by keyword..."
+              autoComplete="off"
             />
           </div>
           <button type="submit" className="btn-primary">
@@ -193,7 +194,7 @@ const Search = () => {
             Showing {pagination?.totalItems || 0} results
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
             {items.map(item => (
               <ItemCard key={item.id} item={item} />
             ))}
