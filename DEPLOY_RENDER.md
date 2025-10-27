@@ -29,9 +29,16 @@
    Database: lostfound
    User: lostfound_user
    Region: Singapore (ใกล้ที่สุด)
-   PostgreSQL Version: 16
+   PostgreSQL Version: 16 (หรือ 15, 14 ก็ได้ - แนะนำใช้ล่าสุด)
    Plan: Free
    ```
+   
+   **หมายเหตุ PostgreSQL Version:**
+   - ✅ **Version 16**: ล่าสุด, มี performance ดีที่สุด (แนะนำ)
+   - ✅ **Version 15**: เสถียร, รองรับฟีเจอร์ครบ
+   - ✅ **Version 14**: เก่ากว่า แต่ใช้งานได้ปกติ
+   - โค้ดของเราใช้งานได้กับทุก version (14, 15, 16)
+   - เลือก version ล่าสุดที่ Render รองรับจะดีที่สุด
 
 3. **คลิก "Create Database"**
    - รอประมาณ 2-3 นาที
