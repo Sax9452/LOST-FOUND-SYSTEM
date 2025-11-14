@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { FiCalendar, FiMapPin, FiTag, FiImage } from 'react-icons/fi';
 import { format } from 'date-fns';
 
 const ItemCard = ({ item }) => {
+  const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
 
@@ -58,18 +60,18 @@ const ItemCard = ({ item }) => {
             {item.images.length > 1 && (
               <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded-md text-xs flex items-center gap-1">
                 <FiImage className="w-3 h-3" />
-                <span>{item.images.length} รูป</span>
+                <span>{item.images.length} {t('items.imageCount')}</span>
               </div>
             )}
           </>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
             <FiTag className="w-16 h-16 mb-2" />
-            <span className="text-sm">ไม่มีรูปภาพ</span>
+            <span className="text-sm">{t('items.details.noImage')}</span>
           </div>
         )}
         <span className={`absolute top-2 right-2 badge ${getStatusColor(item.status)} shadow-lg`}>
-          {item.status}
+          {t(`items.status.${item.status}`, item.status)}
         </span>
       </div>
 
@@ -78,7 +80,7 @@ const ItemCard = ({ item }) => {
         <div className="flex items-start justify-between mb-2">
           <h3 className="text-lg font-semibold line-clamp-1">{item.name}</h3>
           <span className={`text-sm font-medium ${getTypeColor(item.type)}`}>
-            {item.type.toUpperCase()}
+            {t(`items.type.${item.type}`).toUpperCase()}
           </span>
         </div>
 
@@ -89,7 +91,7 @@ const ItemCard = ({ item }) => {
         <div className="space-y-1 text-sm text-gray-500 dark:text-gray-400">
           <div className="flex items-center">
             <FiTag className="w-4 h-4 mr-2" />
-            <span>{item.category}</span>
+            <span>{t(`items.category.${item.category}`, item.category)}</span>
           </div>
           <div className="flex items-center">
             <FiMapPin className="w-4 h-4 mr-2" />

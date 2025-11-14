@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { itemService } from '../api/services';
 import ItemCard from '../components/Items/ItemCard';
-import { FiFilter } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const MyItems = () => {
+  const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,26 +14,31 @@ const MyItems = () => {
 
   useEffect(() => {
     fetchMyItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filterItems = useCallback(() => {
+  useEffect(() => {
+    filterItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, items]);
+
+  const filterItems = () => {
     if (filter === 'all') {
       setFilteredItems(items);
     } else {
       setFilteredItems(items.filter(item => item.status === filter));
     }
-  }, [filter, items]);
-
-  useEffect(() => {
-    filterItems();
-  }, [filterItems]);
+  };
 
   const fetchMyItems = async () => {
     try {
       const response = await itemService.getMyItems();
-      setItems(response.data.items);
+      setItems(response.data.items || []);
     } catch (error) {
       console.error('Error fetching items:', error);
+      const errorMessage = error.response?.data?.message || t('items.myItems.noItemsFound');
+      toast.error(errorMessage);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -44,34 +52,36 @@ const MyItems = () => {
     returned: items.filter(item => item.status === 'returned').length
   };
 
+  const getStatusLabel = (status) => {
+    return t(`items.myItems.${status}`, status);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">My Items</h1>
-
-      {/* Filter Tabs */}
-      <div className="card mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <FiFilter className="text-gray-600 dark:text-gray-400" />
-          <span className="font-medium">Filter by Status:</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {Object.keys(statusCounts).map(status => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filter === status
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)} ({statusCounts[status]})
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">{t('items.myItems.title')}</h1>
+        <Link to="/post" className="btn-primary">
+          {t('items.myItems.postNewItem')}
+        </Link>
       </div>
 
-      {/* Items Grid */}
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-6 overflow-x-auto">
+        {['all', 'active', 'pending', 'matched', 'returned'].map(status => (
+          <button
+            key={status}
+            onClick={() => setFilter(status)}
+            className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+              filter === status
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {getStatusLabel(status)} ({statusCounts[status]})
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="spinner"></div>
@@ -84,9 +94,12 @@ const MyItems = () => {
         </div>
       ) : (
         <div className="card text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400">
-            No items found with status: {filter}
+          <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">
+            {t('items.myItems.noItemsFound')}
           </p>
+          <Link to="/post" className="btn-primary inline-block">
+            {t('items.myItems.postFirstItem')}
+          </Link>
         </div>
       )}
     </div>
@@ -94,5 +107,3 @@ const MyItems = () => {
 };
 
 export default MyItems;
-
-

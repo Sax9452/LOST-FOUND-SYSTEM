@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FiGithub, FiTwitter, FiFacebook, FiMail } from 'react-icons/fi';
+import { FiTwitter, FiFacebook, FiMail } from 'react-icons/fi';
 
 const Footer = () => {
   const { t } = useTranslation();
@@ -88,13 +88,6 @@ const Footer = () => {
                 aria-label="Twitter"
               >
                 <FiTwitter className="w-5 h-5" />
-              </button>
-              <button 
-                onClick={(e) => e.preventDefault()} 
-                className="text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
-                aria-label="Github"
-              >
-                <FiGithub className="w-5 h-5" />
               </button>
               <button 
                 onClick={(e) => e.preventDefault()} 

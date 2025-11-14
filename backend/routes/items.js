@@ -1,20 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const itemController = require('../controllers/itemController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { uploadLimiter, apiLimiter, itemCreationLimiter } = require('../middleware/rateLimiter');
 const { itemValidation, validate, sanitizeInput } = require('../middleware/validator');
 
 // @desc    Get all items with filters
 // @route   GET /api/items
-// @access  Public
-router.get('/', apiLimiter, itemController.getItems);
+// @access  Public (but uses optionalAuth to exclude user's own items if logged in)
+router.get('/', apiLimiter, optionalAuth, itemController.getItems);
 
 // @desc    Search items
 // @route   GET /api/items/search
-// @access  Public
-router.get('/search', apiLimiter, itemController.searchItems);
+// @access  Public (but uses optionalAuth to exclude user's own items if logged in)
+router.get('/search', apiLimiter, optionalAuth, itemController.searchItems);
 
 // @desc    Get items statistics
 // @route   GET /api/items/stats
@@ -44,7 +44,14 @@ router.post(
 // @desc    Update item
 // @route   PUT /api/items/:id
 // @access  Private
-router.put('/:id', protect, sanitizeInput, itemController.updateItem);
+router.put(
+  '/:id',
+  protect,
+  uploadLimiter,
+  upload.array('images', 5),
+  sanitizeInput,
+  itemController.updateItem
+);
 
 // @desc    Delete item
 // @route   DELETE /api/items/:id
@@ -67,5 +74,4 @@ router.get('/user/my-items', protect, itemController.getMyItems);
 router.get('/:id/matches', protect, itemController.getPotentialMatches);
 
 module.exports = router;
-
 

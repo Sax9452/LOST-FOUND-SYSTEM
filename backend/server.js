@@ -5,8 +5,6 @@ const dotenv = require('dotenv');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const { pool } = require('./config/database');
-const { startCleanupJob } = require('./jobs/cleanupMessages');
 const socketManager = require('./socket');
 
 // โหลด environment variables
@@ -100,15 +98,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files สำหรับอัพโหลด
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ทดสอบการเชื่อมต่อ PostgreSQL
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('❌ Database connection error:', err);
-  } else {
-    console.log('✅ PostgreSQL connected at:', res.rows[0].now);
-  }
-});
-
 // Socket.IO setup
 require('./sockets/chatSocket')(io);
 
@@ -119,16 +108,15 @@ chatController.setIO(io);
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/items', require('./routes/items'));
-app.use('/api/chats', require('./routes/chat')); // Changed to /chats (plural)
+app.use('/api/chats', require('./routes/chat'));
 app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/admin', require('./routes/admin'));
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'Server is running with PostgreSQL',
-    database: 'PostgreSQL'
+    message: 'Server is running with in-memory storage',
+    storage: 'in-memory'
   });
 });
 
@@ -175,10 +163,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Database: PostgreSQL`);
-  
-  // Start cleanup job (auto-delete old chat rooms after 30 minutes)
-  startCleanupJob();
+  console.log(`📊 Storage: In-Memory (no database required)`);
 });
 
 

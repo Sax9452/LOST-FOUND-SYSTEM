@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../api/services';
 import toast from 'react-hot-toast';
@@ -6,6 +7,7 @@ import { FiUser, FiMail, FiPhone, FiMapPin, FiLock, FiBell } from 'react-icons/f
 
 const Profile = () => {
   const { user, updateUser } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   
@@ -35,9 +37,9 @@ const Profile = () => {
     try {
       const response = await authService.updateProfile(profileData);
       updateUser(response.data.user);
-      toast.success('Profile updated successfully');
+      toast.success(t('profile.updateSuccess'));
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      toast.error(error.response?.data?.message || t('profile.updateError'));
     } finally {
       setLoading(false);
     }
@@ -47,12 +49,12 @@ const Profile = () => {
     e.preventDefault();
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(t('profile.passwordNotMatch'));
       return;
     }
 
     if (passwordData.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(t('profile.passwordMinLength'));
       return;
     }
 
@@ -63,10 +65,10 @@ const Profile = () => {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
-      toast.success('Password updated successfully');
+      toast.success(t('profile.updatePasswordSuccess'));
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update password');
+      toast.error(error.response?.data?.message || t('profile.updatePasswordError'));
     } finally {
       setLoading(false);
     }
@@ -78,9 +80,9 @@ const Profile = () => {
 
     try {
       await authService.updateNotificationPreferences(notificationPrefs);
-      toast.success('Notification preferences updated');
+      toast.success(t('profile.updatePreferencesSuccess'));
     } catch (error) {
-      toast.error('Failed to update preferences');
+      toast.error(t('profile.updatePreferencesError'));
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ const Profile = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Profile Settings</h1>
+        <h1 className="text-3xl font-bold mb-8">{t('profile.profileSettings')}</h1>
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-6">
@@ -101,7 +103,7 @@ const Profile = () => {
                 : 'border-transparent hover:border-gray-300'
             }`}
           >
-            Profile
+            {t('profile.title')}
           </button>
           <button
             onClick={() => setActiveTab('password')}
@@ -111,7 +113,7 @@ const Profile = () => {
                 : 'border-transparent hover:border-gray-300'
             }`}
           >
-            Password
+            {t('profile.password')}
           </button>
           <button
             onClick={() => setActiveTab('notifications')}
@@ -121,17 +123,17 @@ const Profile = () => {
                 : 'border-transparent hover:border-gray-300'
             }`}
           >
-            Notifications
+            {t('profile.notifications')}
           </button>
         </div>
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
           <div className="card">
-            <h2 className="text-xl font-semibold mb-6">Profile Information</h2>
+            <h2 className="text-xl font-semibold mb-6">{t('profile.profileInformation')}</h2>
             <form onSubmit={handleProfileUpdate} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Username</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.username')}</label>
                 <div className="relative">
                   <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -145,7 +147,7 @@ const Profile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.email')}</label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -155,11 +157,11 @@ const Profile = () => {
                     disabled
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
+                <p className="text-sm text-gray-500 mt-1">{t('profile.emailCannotBeChanged')}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Phone</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.phone')}</label>
                 <div className="relative">
                   <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -167,14 +169,14 @@ const Profile = () => {
                     value={profileData.phone}
                     onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                     className="input-field pl-10"
-                    placeholder="Optional"
+                    placeholder={t('profile.optional')}
                     autoComplete="off"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Location</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.location')}</label>
                 <div className="relative">
                   <FiMapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -182,21 +184,21 @@ const Profile = () => {
                     value={profileData.location}
                     onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
                     className="input-field pl-10"
-                    placeholder="City, Country"
+                    placeholder={t('profile.cityCountry')}
                     autoComplete="off"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Language</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.language')}</label>
                 <select
                   value={profileData.language}
                   onChange={(e) => setProfileData({ ...profileData, language: e.target.value })}
                   className="input-field"
                 >
-                  <option value="en">English</option>
-                  <option value="th">ไทย (Thai)</option>
+                  <option value="en">{t('profile.english')}</option>
+                  <option value="th">{t('profile.thai')}</option>
                 </select>
               </div>
 
@@ -205,7 +207,7 @@ const Profile = () => {
                 disabled={loading}
                 className="btn-primary w-full"
               >
-                {loading ? <div className="spinner"></div> : 'Save Changes'}
+                {loading ? <div className="spinner"></div> : t('profile.saveChanges')}
               </button>
             </form>
           </div>
@@ -214,10 +216,10 @@ const Profile = () => {
         {/* Password Tab */}
         {activeTab === 'password' && (
           <div className="card">
-            <h2 className="text-xl font-semibold mb-6">Change Password</h2>
+            <h2 className="text-xl font-semibold mb-6">{t('profile.changePassword')}</h2>
             <form onSubmit={handlePasswordUpdate} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Current Password</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.currentPassword')}</label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -232,7 +234,7 @@ const Profile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">New Password</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.newPassword')}</label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -248,7 +250,7 @@ const Profile = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Confirm New Password</label>
+                <label className="block text-sm font-medium mb-2">{t('profile.confirmNewPassword')}</label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
@@ -267,7 +269,7 @@ const Profile = () => {
                 disabled={loading}
                 className="btn-primary w-full"
               >
-                {loading ? <div className="spinner"></div> : 'Update Password'}
+                {loading ? <div className="spinner"></div> : t('profile.changePassword')}
               </button>
             </form>
           </div>
@@ -276,15 +278,15 @@ const Profile = () => {
         {/* Notifications Tab */}
         {activeTab === 'notifications' && (
           <div className="card">
-            <h2 className="text-xl font-semibold mb-6">Notification Preferences</h2>
+            <h2 className="text-xl font-semibold mb-6">{t('profile.notificationPreferences')}</h2>
             <form onSubmit={handleNotificationUpdate} className="space-y-6">
               <label className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center">
                   <FiBell className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <p className="font-medium">Email Notifications</p>
+                    <p className="font-medium">{t('profile.emailNotifications')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Receive notifications via email
+                      {t('profile.receiveEmailNotifications')}
                     </p>
                   </div>
                 </div>
@@ -300,9 +302,9 @@ const Profile = () => {
                 <div className="flex items-center">
                   <FiBell className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <p className="font-medium">Push Notifications</p>
+                    <p className="font-medium">{t('profile.pushNotifications')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Receive real-time push notifications
+                      {t('profile.receivePushNotifications')}
                     </p>
                   </div>
                 </div>
@@ -318,9 +320,9 @@ const Profile = () => {
                 <div className="flex items-center">
                   <FiBell className="w-5 h-5 mr-3 text-gray-600 dark:text-gray-400" />
                   <div>
-                    <p className="font-medium">Match Alerts</p>
+                    <p className="font-medium">{t('profile.matchAlerts')}</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Get notified when potential matches are found
+                      {t('profile.getNotifiedWhenMatchesFound')}
                     </p>
                   </div>
                 </div>
@@ -337,7 +339,7 @@ const Profile = () => {
                 disabled={loading}
                 className="btn-primary w-full"
               >
-                {loading ? <div className="spinner"></div> : 'Save Preferences'}
+                {loading ? <div className="spinner"></div> : t('profile.savePreferences')}
               </button>
             </form>
           </div>
@@ -348,5 +350,3 @@ const Profile = () => {
 };
 
 export default Profile;
-
-

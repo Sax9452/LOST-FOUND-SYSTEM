@@ -1,5 +1,4 @@
 const { Notification } = require('../models/db');
-const { pool } = require('../config/database');
 
 // @desc    ดูการแจ้งเตือนทั้งหมด
 // @route   GET /api/notifications
@@ -14,10 +13,9 @@ exports.getNotifications = async (req, res, next) => {
       offset
     );
 
-    // นับจำนวนทั้งหมด
-    const countQuery = 'SELECT COUNT(*) FROM notifications WHERE recipient_id = $1';
-    const countResult = await pool.query(countQuery, [req.user.id]);
-    const total = parseInt(countResult.rows[0].count);
+    // Get total count
+    const allNotifications = await Notification.findByUser(req.user.id, 10000, 0);
+    const total = allNotifications.length;
 
     res.json({
       success: true,
@@ -93,7 +91,14 @@ exports.markAllAsRead = async (req, res, next) => {
 // @route   DELETE /api/notifications/:id
 exports.deleteNotification = async (req, res, next) => {
   try {
-    await Notification.delete(req.params.id, req.user.id);
+    const deleted = await Notification.delete(req.params.id, req.user.id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบการแจ้งเตือนนี้'
+      });
+    }
 
     res.json({
       success: true,
@@ -104,3 +109,4 @@ exports.deleteNotification = async (req, res, next) => {
     next(error);
   }
 };
+

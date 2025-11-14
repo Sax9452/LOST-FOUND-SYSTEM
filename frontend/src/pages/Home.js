@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { itemService } from '../api/services';
 import { FiSearch, FiPlusCircle, FiBell, FiCheckCircle } from 'react-icons/fi';
 import ItemCard from '../components/Items/ItemCard';
+import toast from 'react-hot-toast';
 
 const Home = () => {
   const { t } = useTranslation();
@@ -14,13 +15,17 @@ const Home = () => {
   const fetchData = useCallback(async () => {
     try {
       const [itemsRes, statsRes] = await Promise.all([
-        itemService.getItems({ limit: 6, sort: '-createdAt' }),
+        itemService.getItems({ limit: 6, status: 'active' }),
         itemService.getStats()
       ]);
-      setRecentItems(itemsRes.data.items);
-      setStats(statsRes.data.stats);
+      setRecentItems(itemsRes.data.items || []);
+      setStats(statsRes.data.stats || {});
     } catch (error) {
       console.error('Error fetching data:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to load data';
+      toast.error(errorMessage);
+      setRecentItems([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }
@@ -98,15 +103,15 @@ const Home = () => {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div>
-                <div className="text-4xl font-bold text-primary-600">{stats.totalItems || 0}</div>
+                <div className="text-4xl font-bold text-primary-600">{stats.total_items || 0}</div>
                 <div className="text-gray-600 dark:text-gray-400 mt-2">{t('home.stats.totalItems')}</div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-green-600">{stats.returnedItems || 0}</div>
+                <div className="text-4xl font-bold text-green-600">{stats.returned_items || 0}</div>
                 <div className="text-gray-600 dark:text-gray-400 mt-2">{t('home.stats.foundItems')}</div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-blue-600">{stats.activeItems || 0}</div>
+                <div className="text-4xl font-bold text-blue-600">{stats.active_items || 0}</div>
                 <div className="text-gray-600 dark:text-gray-400 mt-2">{t('home.stats.activeUsers')}</div>
               </div>
               <div>
@@ -132,11 +137,17 @@ const Home = () => {
             <div className="flex justify-center py-12">
               <div className="spinner"></div>
             </div>
-          ) : (
+          ) : recentItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {recentItems.map(item => (
                 <ItemCard key={item.id} item={item} />
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600 dark:text-gray-400 text-lg">
+                {t('home.recentItems.noItems')}
+              </p>
             </div>
           )}
         </div>
@@ -146,5 +157,3 @@ const Home = () => {
 };
 
 export default Home;
-
-

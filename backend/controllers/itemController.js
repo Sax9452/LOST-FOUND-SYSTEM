@@ -1,9 +1,7 @@
-const { Item, User, Notification } = require('../models/db');
+const { Item, User } = require('../models/db');
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
-const { pool } = require('../config/database');
-const matchingAlgorithm = require('../utils/matchingAlgorithm');
 const { createNotification } = require('../utils/notifications');
 
 // @desc    ดูรายการของทั้งหมด (มีตัวกรองและ pagination)
@@ -13,6 +11,9 @@ exports.getItems = async (req, res, next) => {
     const {
       type,
       category,
+      location,
+      dateFrom,
+      dateTo,
       status = 'active',
       page = 1,
       limit = 12,
@@ -22,28 +23,19 @@ exports.getItems = async (req, res, next) => {
     const filters = { status };
     if (type) filters.type = type;
     if (category) filters.category = category;
+    if (location) filters.location = location;
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
+
+    // Exclude current user's items if logged in
+    const excludeOwnerId = req.user ? req.user.id : null;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    const items = await Item.findAll(filters, parseInt(limit), offset, sort);
+    const items = await Item.findAll(filters, parseInt(limit), offset, sort, excludeOwnerId);
 
-    // นับจำนวนทั้งหมด
-    let countQuery = 'SELECT COUNT(*) FROM items WHERE status = $1';
-    const values = [status];
-    let paramIndex = 2;
-
-    if (type) {
-      countQuery += ` AND type = $${paramIndex}`;
-      values.push(type);
-      paramIndex++;
-    }
-
-    if (category) {
-      countQuery += ` AND category = $${paramIndex}`;
-      values.push(category);
-    }
-
-    const countResult = await pool.query(countQuery, values);
-    const totalItems = parseInt(countResult.rows[0].count);
+    // Calculate total (also exclude user's items)
+    const allItems = await Item.findAll({ status }, 10000, 0, sort, excludeOwnerId);
+    const totalItems = allItems.length;
 
     res.json({
       success: true,
@@ -67,10 +59,10 @@ exports.searchItems = async (req, res, next) => {
   try {
     const { q, type, category, page = 1, limit = 12 } = req.query;
 
-    if (!q) {
+    if (!q || !q.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'กรุณาระบุคำค้นหา'
+        message: 'กรุณากรอกคำค้นหา'
       });
     }
 
@@ -78,15 +70,21 @@ exports.searchItems = async (req, res, next) => {
     if (type) filters.type = type;
     if (category) filters.category = category;
 
-    const items = await Item.search(q, filters);
+    // Exclude current user's items if logged in
+    const excludeOwnerId = req.user ? req.user.id : null;
+
+    const results = await Item.search(q.trim(), filters, excludeOwnerId);
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const paginatedResults = results.slice(offset, offset + parseInt(limit));
 
     res.json({
       success: true,
-      items,
+      items: paginatedResults,
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(items.length / parseInt(limit)),
-        totalItems: items.length
+        totalPages: Math.ceil(results.length / parseInt(limit)),
+        totalItems: results.length,
+        itemsPerPage: parseInt(limit)
       }
     });
   } catch (error) {
@@ -108,29 +106,12 @@ exports.getItemById = async (req, res, next) => {
       });
     }
 
-    // เพิ่มจำนวนการดู
+    // Increment views
     await Item.incrementViews(req.params.id);
-
-    // Transform owner data to object
-    const transformedItem = {
-      ...item,
-      owner: {
-        id: item.owner_id,
-        username: item.owner_username,
-        email: item.owner_email,
-        phone: item.owner_phone
-      }
-    };
-
-    // ลบ flat owner fields
-    delete transformedItem.owner_id;
-    delete transformedItem.owner_username;
-    delete transformedItem.owner_email;
-    delete transformedItem.owner_phone;
 
     res.json({
       success: true,
-      item: transformedItem
+      item
     });
   } catch (error) {
     console.error('getItemById error:', error);
@@ -138,145 +119,102 @@ exports.getItemById = async (req, res, next) => {
   }
 };
 
-/**
- * Create a new lost/found item
- * @desc    ลงประกาศของใหม่
- * @route   POST /api/items
- * @access  Private
- * @param {Object} req - Express request object
- * @param {Object} req.body - Request body
- * @param {string} req.body.type - Item type ('lost' or 'found')
- * @param {string} req.body.name - Item name (3-100 characters)
- * @param {string} req.body.description - Item description (10-2000 characters)
- * @param {string} req.body.category - Item category
- * @param {string} req.body.date - Date when item was lost/found (ISO format)
- * @param {string} req.body.location - Location where item was lost/found
- * @param {string} [req.body.coordinates] - GPS coordinates (JSON string)
- * @param {Array} req.files - Uploaded images (max 5, processed with Sharp)
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- * @returns {Promise<void>} JSON response with created item
- */
+// @desc    สร้างของใหม่
+// @route   POST /api/items
 exports.createItem = async (req, res, next) => {
   try {
-    const { type, name, description, category, date, location, coordinates } = req.body;
+    const { type, name, description, category, date, location, latitude, longitude } = req.body;
 
-    // ประมวลผลและบีบอัดรูปภาพ (with enhanced security)
-    const imagePaths = [];
+    // Process images
+    let images = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         try {
-          // 1. Validate actual image content (not just extension)
-          const metadata = await sharp(file.path).metadata();
-          
-          // 2. Check image dimensions (prevent extremely large images)
-          if (metadata.width > 10000 || metadata.height > 10000) {
-            fs.unlinkSync(file.path);
-            return res.status(400).json({
-              success: false,
-              message: 'Image dimensions too large (max 10000x10000)'
-            });
-          }
-          
-          // 3. Verify it's actually a valid image format
-          const allowedFormats = ['jpeg', 'jpg', 'png', 'webp'];
-          if (!allowedFormats.includes(metadata.format)) {
-            fs.unlinkSync(file.path);
-            return res.status(400).json({
-              success: false,
-              message: 'Invalid image format'
-            });
-          }
-          
-          // 4. Process and compress
-          const filename = `compressed-${Date.now()}-${file.filename}`;
+          // Generate unique filename
+          const filename = `item-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
           const outputPath = path.join(__dirname, '../uploads/items', filename);
 
+          // Resize and optimize image
           await sharp(file.path)
-            .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 80 })
+            .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 85 })
             .toFile(outputPath);
 
-          // 5. Delete original file
+          // Delete original
           fs.unlinkSync(file.path);
 
-          imagePaths.push(`/uploads/items/${filename}`);
-        } catch (imageError) {
-          // Clean up on error
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-          console.error('Image validation error:', imageError);
-          return res.status(400).json({
-            success: false,
-            message: 'Invalid image file. Please upload a valid image.'
-          });
+          images.push(`/uploads/items/${filename}`);
+        } catch (error) {
+          console.error('Image processing error:', error);
         }
       }
     }
 
-    // สร้างรายการใหม่
-    const coords = coordinates ? JSON.parse(coordinates) : {};
+    // Create item
     const item = await Item.create({
       type,
-      name: name.toLowerCase().trim(), // แปลงเป็นตัวพิมพ์เล็ก
-      description: description.toLowerCase().trim(), // แปลงเป็นตัวพิมพ์เล็ก
+      name,
+      description,
       category,
       date,
       location,
-      latitude: coords.lat || null,
-      longitude: coords.lng || null,
-      images: imagePaths,
-      owner_id: req.user.id
+      latitude: latitude || null,
+      longitude: longitude || null,
+      images,
+      owner_id: req.user.id,
+      status: 'active'
     });
 
-    // หา potential matches และส่ง notification
+    // Find potential matches and send notifications
+    let matchesCount = 0;
     try {
-      console.log('🔍 Searching for matches...');
-      const matches = await matchingAlgorithm.findMatches(item);
-      console.log(`📊 Found ${matches ? matches.length : 0} potential matches`);
-      
-      if (matches && matches.length > 0) {
-        console.log(`✅ Sending notifications for ${matches.length} matches...`);
-        
-        // ส่ง notification ไปยังเจ้าของ matches
-        for (const match of matches) {
-          console.log(`   → Notifying user ${match.owner.id} (${match.owner.username}) about match with score ${match.matchScore}/18`);
-          
+      const oppositeType = type === 'lost' ? 'found' : 'lost';
+      const allItems = await Item.findAll(
+        { category, type: oppositeType, status: 'active' },
+        100,
+        0,
+        'created_at DESC',
+        req.user.id // Exclude current user's items
+      );
+
+      // Filter by date range (within 30 days)
+      const itemDate = new Date(date);
+      const dateStart = new Date(itemDate);
+      dateStart.setDate(dateStart.getDate() - 30);
+      const dateEnd = new Date(itemDate);
+      dateEnd.setDate(dateEnd.getDate() + 30);
+
+      const matches = allItems.filter(matchItem => {
+        const matchDate = new Date(matchItem.date);
+        return matchDate >= dateStart && matchDate <= dateEnd;
+      });
+
+      matchesCount = matches.length;
+
+      // Send notifications to owners of matching items
+      for (const matchItem of matches.slice(0, 10)) {
+        const matchOwner = await User.findById(matchItem.owner_id);
+        if (matchOwner) {
           await createNotification({
-            recipient: match.owner.id,
+            recipient: matchItem.owner_id,
             type: 'match',
-            title: 'พบของที่อาจตรงกับของของคุณ!',
-            message: `มีผู้โพสต์ "${item.name}" ที่อาจตรงกับ "${match.name}" ของคุณ`,
+            title: 'พบสิ่งของที่อาจตรงกัน!',
+            message: `พบ${type === 'lost' ? 'ของหาย' : 'ของพบ'} "${name}" ที่อาจตรงกับ${type === 'lost' ? 'ของที่คุณพบ' : 'ของที่คุณหาย'} "${matchItem.name}"`,
             relatedItem: item.id
           });
         }
-
-        // ส่ง notification ไปยังเจ้าของ item ใหม่
-        console.log(`   → Notifying item owner (user ${req.user.id}) about ${matches.length} matches`);
-        
-        await createNotification({
-          recipient: req.user.id,
-          type: 'match',
-          title: `พบ ${matches.length} รายการที่อาจตรงกัน!`,
-          message: `เรามีรายการที่อาจตรงกับ "${item.name}" ของคุณ คลิกเพื่อดูรายละเอียด`,
-          relatedItem: item.id
-        });
-        
-        console.log('✅ All match notifications sent successfully!');
-      } else {
-        console.log('ℹ️ No matches found for this item');
       }
+
+      console.log(`✅ Sent ${matches.length} matching notifications for item ${item.id}`);
     } catch (matchError) {
-      console.error('❌ Error finding matches:', matchError);
-      console.error('   Stack:', matchError.stack);
-      // ไม่ return error เพราะลงประกาศสำเร็จแล้ว แค่ matching error
+      console.error('Error finding matches and sending notifications:', matchError);
+      // Don't fail the request if matching fails
     }
 
     res.status(201).json({
       success: true,
       item,
-      message: 'ลงประกาศสำเร็จ!'
+      matchesFound: matchesCount || 0
     });
   } catch (error) {
     console.error('createItem error:', error);
@@ -284,10 +222,14 @@ exports.createItem = async (req, res, next) => {
   }
 };
 
-// @desc    แก้ไขข้อมูลของ
+// @desc    อัพเดทของ
 // @route   PUT /api/items/:id
 exports.updateItem = async (req, res, next) => {
   try {
+    const path = require('path');
+    const fs = require('fs');
+    const sharp = require('sharp');
+    
     const item = await Item.findById(req.params.id);
 
     if (!item) {
@@ -297,21 +239,59 @@ exports.updateItem = async (req, res, next) => {
       });
     }
 
-    // ตรวจสอบสิทธิ์
-    if (item.owner_id !== req.user.id && req.user.role !== 'admin') {
+    if (item.owner_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'ไม่มีสิทธิ์แก้ไขรายการนี้'
       });
     }
 
-    const { name, description, category, date, location } = req.body;
+    // Process new images if uploaded
+    let newImages = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          // Generate unique filename
+          const filename = `item-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+          const outputPath = path.join(__dirname, '../uploads/items', filename);
+
+          // Resize and optimize image
+          await sharp(file.path)
+            .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 85 })
+            .toFile(outputPath);
+
+          // Delete original
+          fs.unlinkSync(file.path);
+
+          newImages.push(`/uploads/items/${filename}`);
+        } catch (error) {
+          console.error('Image processing error:', error);
+        }
+      }
+    }
+
+    // Get existing images from request (images that should be kept)
+    const existingImagesToKeep = req.body.existingImages 
+      ? (Array.isArray(req.body.existingImages) ? req.body.existingImages : [req.body.existingImages])
+      : [];
+    
+    // Combine existing images (that should be kept) with new images
+    const allImages = [...existingImagesToKeep, ...newImages];
+
     const updates = {};
-    if (name) updates.name = name;
-    if (description) updates.description = description;
-    if (category) updates.category = category;
-    if (date) updates.date = date;
-    if (location) updates.location = location;
+    if (req.body.name) updates.name = req.body.name;
+    if (req.body.description) updates.description = req.body.description;
+    if (req.body.category) updates.category = req.body.category;
+    if (req.body.date) updates.date = req.body.date;
+    if (req.body.location) updates.location = req.body.location;
+    if (req.body.latitude !== undefined) updates.latitude = req.body.latitude;
+    if (req.body.longitude !== undefined) updates.longitude = req.body.longitude;
+    
+    // Update images if there are changes (new images added or existing images removed)
+    if (newImages.length > 0 || existingImagesToKeep.length !== (item.images?.length || 0)) {
+      updates.images = allImages;
+    }
 
     const updatedItem = await Item.update(req.params.id, updates);
 
@@ -325,7 +305,7 @@ exports.updateItem = async (req, res, next) => {
   }
 };
 
-// @desc    ลบรายการ
+// @desc    ลบของ
 // @route   DELETE /api/items/:id
 exports.deleteItem = async (req, res, next) => {
   try {
@@ -338,22 +318,21 @@ exports.deleteItem = async (req, res, next) => {
       });
     }
 
-    // ตรวจสอบสิทธิ์
-    if (item.owner_id !== req.user.id && req.user.role !== 'admin') {
+    if (item.owner_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'ไม่มีสิทธิ์ลบรายการนี้'
       });
     }
 
-    // ลบรูปภาพ
+    // Delete images
     if (item.images && item.images.length > 0) {
-      for (const imagePath of item.images) {
-        const fullPath = path.join(__dirname, '..', imagePath);
+      item.images.forEach(imagePath => {
+        const fullPath = path.join(__dirname, '../', imagePath);
         if (fs.existsSync(fullPath)) {
           fs.unlinkSync(fullPath);
         }
-      }
+      });
     }
 
     await Item.delete(req.params.id);
@@ -372,7 +351,15 @@ exports.deleteItem = async (req, res, next) => {
 // @route   PUT /api/items/:id/status
 exports.updateStatus = async (req, res, next) => {
   try {
-    const { status, matchedWith } = req.body;
+    const { status, matchedWithId } = req.body;
+    const validStatuses = ['pending', 'active', 'matched', 'returned', 'archived'];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'สถานะไม่ถูกต้อง'
+      });
+    }
 
     const item = await Item.findById(req.params.id);
 
@@ -383,27 +370,84 @@ exports.updateStatus = async (req, res, next) => {
       });
     }
 
-    // ตรวจสอบสิทธิ์
-    if (item.owner_id !== req.user.id && req.user.role !== 'admin') {
+    if (item.owner_id !== req.user.id) {
       return res.status(403).json({
         success: false,
-        message: 'ไม่มีสิทธิ์อัพเดทสถานะ'
+        message: 'ไม่มีสิทธิ์แก้ไขสถานะ'
       });
     }
 
+    // Validate status transitions based on item type
+    const currentStatus = item.status;
+    
+    // Get allowed transitions based on item type (lost/found)
+    const getAllowedTransitions = (itemType, currentStatus) => {
+      if (currentStatus === 'archived') return [];
+      if (currentStatus === 'pending') return ['active', 'archived'];
+      if (currentStatus === 'returned') return ['archived'];
+      
+      if (itemType === 'lost') {
+        // Lost items (ของหาย):
+        // active -> matched (พบของที่ตรงกัน) หรือ returned (ได้ของคืนแล้ว)
+        if (currentStatus === 'active') return ['matched', 'returned', 'archived'];
+        // matched -> returned (ได้ของคืนแล้ว)
+        if (currentStatus === 'matched') return ['returned', 'archived'];
+      } else {
+        // Found items (ของพบ):
+        // active -> matched (พบเจ้าของ) หรือ returned (คืนของให้เจ้าของแล้ว)
+        if (currentStatus === 'active') return ['matched', 'returned', 'archived'];
+        // matched -> returned (คืนของให้เจ้าของแล้ว)
+        if (currentStatus === 'matched') return ['returned', 'archived'];
+      }
+      return [];
+    };
+    
+    const allowedTransitions = getAllowedTransitions(item.type, currentStatus);
+
+    // Check if transition is allowed
+    if (!allowedTransitions.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `ไม่สามารถเปลี่ยนสถานะจาก "${currentStatus}" เป็น "${status}" ได้`
+      });
+    }
+
+    // Business logic for status changes
     const updates = { status };
-    if (matchedWith) updates.matched_with = matchedWith;
+
+    // If changing to matched, set matched_with_id
+    if (status === 'matched' && matchedWithId) {
+      updates.matched_with_id = matchedWithId;
+      
+      // Also update the matched item to matched status
+      try {
+        const matchedItem = await Item.findById(matchedWithId);
+        if (matchedItem && matchedItem.status === 'active') {
+          await Item.update(matchedWithId, { 
+            status: 'matched',
+            matched_with_id: item.id
+          });
+        }
+      } catch (error) {
+        console.error('Error updating matched item:', error);
+        // Continue even if updating matched item fails
+      }
+    }
+
+    // If changing to returned, also update matched item if exists
+    if (status === 'returned' && item.matched_with_id) {
+      try {
+        const matchedItem = await Item.findById(item.matched_with_id);
+        if (matchedItem && matchedItem.status === 'matched') {
+          await Item.update(item.matched_with_id, { status: 'returned' });
+        }
+      } catch (error) {
+        console.error('Error updating matched item to returned:', error);
+        // Continue even if updating matched item fails
+      }
+    }
 
     const updatedItem = await Item.update(req.params.id, updates);
-
-    // สร้างการแจ้งเตือน
-    await Notification.create({
-      recipient_id: item.owner_id,
-      type: 'status_update',
-      title: 'อัพเดทสถานะของ',
-      message: `รายการ "${item.name}" ถูกเปลี่ยนสถานะเป็น ${status}`,
-      related_item_id: item.id
-    });
 
     res.json({
       success: true,
@@ -415,7 +459,7 @@ exports.updateStatus = async (req, res, next) => {
   }
 };
 
-// @desc    ดูของของตัวเอง
+// @desc    ดูของของฉัน
 // @route   GET /api/items/user/my-items
 exports.getMyItems = async (req, res, next) => {
   try {
@@ -431,7 +475,7 @@ exports.getMyItems = async (req, res, next) => {
   }
 };
 
-// @desc    ดูรายการที่อาจจะตรงกัน
+// @desc    ดูของที่อาจตรงกัน
 // @route   GET /api/items/:id/matches
 exports.getPotentialMatches = async (req, res, next) => {
   try {
@@ -444,23 +488,38 @@ exports.getPotentialMatches = async (req, res, next) => {
       });
     }
 
-    // หารายการที่ตรงกันข้าม (ถ้าหาย หา found, ถ้าเจอ หา lost)
+    // Find potential matches (same category, opposite type)
     const oppositeType = item.type === 'lost' ? 'found' : 'lost';
-    const query = `
-      SELECT * FROM items 
-      WHERE type = $1 
-      AND category = $2 
-      AND status = 'active'
-      AND id != $3
-      ORDER BY created_at DESC
-      LIMIT 10
-    `;
+    // Exclude current user's items if logged in
+    const excludeOwnerId = req.user ? req.user.id : null;
+    const allItems = await Item.findAll({ category: item.category, type: oppositeType, status: 'active' }, 100, 0, 'created_at DESC', excludeOwnerId);
     
-    const result = await pool.query(query, [oppositeType, item.category, item.id]);
+    // Filter by date range (within 30 days)
+    const itemDate = new Date(item.date);
+    const dateStart = new Date(itemDate);
+    dateStart.setDate(dateStart.getDate() - 30);
+    const dateEnd = new Date(itemDate);
+    dateEnd.setDate(dateEnd.getDate() + 30);
+
+    const matches = allItems
+      .filter(matchItem => {
+        if (matchItem.id === item.id) return false;
+        const matchDate = new Date(matchItem.date);
+        return matchDate >= dateStart && matchDate <= dateEnd;
+      })
+      .slice(0, 10)
+      .map(matchItem => ({
+        ...matchItem,
+        owner: {
+          id: matchItem.owner_id,
+          username: matchItem.owner_username
+        },
+        matchScore: 15 // Simple score for now
+      }));
 
     res.json({
       success: true,
-      matches: result.rows
+      matches
     });
   } catch (error) {
     console.error('getPotentialMatches error:', error);
@@ -474,23 +533,13 @@ exports.getStats = async (req, res, next) => {
   try {
     const stats = await Item.getStats();
 
-    const successRate = stats.total_items > 0 
-      ? ((parseInt(stats.returned_items) / parseInt(stats.total_items)) * 100).toFixed(1)
-      : 0;
-
     res.json({
       success: true,
-      stats: {
-        totalItems: parseInt(stats.total_items),
-        returnedItems: parseInt(stats.returned_items),
-        activeItems: parseInt(stats.active_items),
-        lostItems: parseInt(stats.lost_items),
-        foundItems: parseInt(stats.found_items),
-        successRate
-      }
+      stats
     });
   } catch (error) {
     console.error('getStats error:', error);
     next(error);
   }
 };
+

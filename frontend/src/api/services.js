@@ -45,18 +45,3 @@ export const notificationService = {
   deleteNotification: (id) => axios.delete(`/notifications/${id}`),
 };
 
-// Admin Services
-export const adminService = {
-  getDashboard: () => axios.get('/admin/dashboard'),
-  getUsers: (params) => axios.get('/admin/users', { params }),
-  updateUserRole: (id, data) => axios.put(`/admin/users/${id}/role`, data),
-  deleteUser: (id) => axios.delete(`/admin/users/${id}`),
-  getPendingItems: () => axios.get('/admin/items/pending'),
-  approveItem: (id) => axios.put(`/admin/items/${id}/approve`),
-  rejectItem: (id, data) => axios.put(`/admin/items/${id}/reject`, data),
-  deleteItem: (id) => axios.delete(`/admin/items/${id}`),
-  getReportedChats: () => axios.get('/admin/chats/reported'),
-  resolveReportedChat: (id, data) => axios.put(`/admin/chats/${id}/resolve`, data),
-};
-
-

@@ -1,506 +1,591 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { chatService } from '../api/services';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
-import { useTranslation } from 'react-i18next';
-import { FiSend, FiUser, FiMessageSquare } from 'react-icons/fi';
-import { format, formatDistanceToNow } from 'date-fns';
+import { FiSend, FiMessageSquare } from 'react-icons/fi';
+import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
-/**
- * Real-time Private Chat Page
- * Combined Inbox + Chat Window with Socket.IO
- */
 const Chat = () => {
-  const navigate = useNavigate();
-  const { socket } = useApp();
+  const [searchParams] = useSearchParams();
+  const { socket, fetchUnreadMessages } = useApp();
   const { user } = useAuth();
   const { t } = useTranslation();
 
-  // State
   const [chatRooms, setChatRooms] = useState([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [typingUsers, setTypingUsers] = useState(new Set());
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  // Refs
+  const [typingUsers, setTypingUsers] = useState({});
   const messagesEndRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const typingTimeoutRef = useRef({});
+  const typingDebounceRef = useRef(null);
+  const joinedRoomsRef = useRef(new Set()); // Track joined rooms to prevent duplicate joins
+  const markAsReadTimeoutRef = useRef(null); // Debounce markAsRead calls
+  const isUserScrollingRef = useRef(false); // Track if user is manually scrolling
+  const scrollTimeoutRef = useRef(null); // Timeout to reset isUserScrollingRef
 
-  // ==========================================
-  // Helper Functions
-  // ==========================================
-
-  /**
-   * Scroll to bottom of messages
-   */
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'end'
-      });
-    }
-  };
-
-  /**
-   * Get other participant in chat
-   */
-  const getOtherParticipant = useCallback((chatRoom) => {
-    if (!chatRoom || !chatRoom.participants) return null;
-    return chatRoom.participants.find(p => p.id !== user.id);
-  }, [user]);
-
-  /**
-   * Format timestamp
-   */
-  const formatMessageTime = (timestamp) => {
-    try {
-      return format(new Date(timestamp), 'HH:mm');
-    } catch {
-      return '';
-    }
-  };
-
-  /**
-   * Format last message time
-   */
-  const formatLastMessageTime = (timestamp) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch {
-      return '';
-    }
-  };
-
-  // ==========================================
-  // Fetch Functions
-  // ==========================================
-
-  /**
-   * Fetch all chat rooms
-   */
-  const fetchChatRooms = useCallback(async () => {
+  const fetchChatRooms = async () => {
     try {
       const response = await chatService.getChatRooms();
-      console.log('📥 Fetched chat rooms:', response.data.chatRooms);
       setChatRooms(response.data.chatRooms || []);
     } catch (error) {
-      console.error('❌ Error fetching chat rooms:', error);
-      toast.error('Failed to load chats');
+      console.error('Error fetching chat rooms:', error);
+      toast.error(t('chat.errorFetchingRooms'));
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchChatRooms();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Fetch messages for selected chat room
-   */
-  const fetchMessages = useCallback(async (chatRoomId) => {
-    try {
-      const response = await chatService.getChatRoom(chatRoomId);
-      console.log('📥 Fetched messages:', response.data.chatRoom.messages);
-      setMessages(response.data.chatRoom.messages || []);
-      setTimeout(() => scrollToBottom(), 100);
-
-      // Mark as read
-      await chatService.markAsRead(chatRoomId);
-    } catch (error) {
-      console.error('❌ Error fetching messages:', error);
-      toast.error('Failed to load messages');
-    }
-  }, []);
-
-  /**
-   * Fetch unread count
-   */
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const response = await chatService.getUnreadCount();
-      setUnreadCount(response.data.unreadCount || 0);
-    } catch (error) {
-      console.error('❌ Error fetching unread count:', error);
-    }
-  }, []);
-
-  // ==========================================
-  // Event Handlers
-  // ==========================================
-
-  /**
-   * Select chat room
-   */
-  const handleSelectChatRoom = async (chatRoom) => {
-    setSelectedChatRoom(chatRoom);
-    await fetchMessages(chatRoom.id);
-
-    // Join Socket.IO room
+  // Global listener for new messages (updates chat rooms list even when not in that room)
+  useEffect(() => {
     if (socket) {
-      socket.emit('join_chat', chatRoom.id);
-      console.log(`🔌 Joined chat room: ${chatRoom.id}`);
+      const handleGlobalNewMessage = (data) => {
+        console.log('💬 Global new message received:', data);
+        
+        const roomId = String(data.chatRoomId || data.chatRoomId);
+        const isCurrentlyViewing = selectedChatRoom && String(selectedChatRoom.id) === roomId;
+        
+        // Only update chat rooms list if not currently viewing this room
+        // (room-specific listener handles messages and updates for the current room)
+        if (!isCurrentlyViewing) {
+          setChatRooms(prev => prev.map(room => {
+            const currentRoomId = String(room.id);
+            
+            if (roomId === currentRoomId) {
+              return {
+                ...room,
+                lastMessage: data.message.messageText,
+                lastMessageTime: data.message.createdAt,
+                lastMessageSenderId: data.message.sender.id,
+                // Increment unread count if message is not from current user
+                unreadCount: data.message.sender.id !== user?.id
+                  ? (room.unreadCount || 0) + 1
+                  : (room.unreadCount || 0)
+              };
+            }
+            return room;
+          }));
+        }
+      };
+
+      const handleGlobalUnreadCountUpdate = (data) => {
+        console.log('📊 Global unread count update:', data);
+        // Update global unread count via fetchUnreadMessages
+        if (fetchUnreadMessages) {
+          fetchUnreadMessages();
+        }
+        
+        // Note: Chat rooms list unread counts will be updated via new_message events
+        // No need to refresh here to avoid infinite loops
+      };
+
+      socket.on('new_message', handleGlobalNewMessage);
+      socket.on('unread_count_update', handleGlobalUnreadCountUpdate);
+
+      return () => {
+        socket.off('new_message', handleGlobalNewMessage);
+        socket.off('unread_count_update', handleGlobalUnreadCountUpdate);
+      };
+    }
+  }, [socket, user, selectedChatRoom, fetchUnreadMessages]);
+
+  useEffect(() => {
+    const roomId = searchParams.get('room');
+    if (roomId && chatRooms.length > 0) {
+      const room = chatRooms.find(r => r.id === roomId);
+      if (room) {
+        selectChatRoom(room);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, chatRooms]);
+
+  useEffect(() => {
+    if (selectedChatRoom && socket) {
+      const roomId = String(selectedChatRoom.id);
+      
+      // Only join if not already joined
+      if (!joinedRoomsRef.current.has(roomId)) {
+        socket.emit('join_chat', selectedChatRoom.id);
+        joinedRoomsRef.current.add(roomId);
+        console.log('📨 Joined chat room:', selectedChatRoom.id);
+      }
+      
+      const handleNewMessage = (data) => {
+        console.log('💬 New message received:', data);
+        // Socket emits { chatRoomId, message }
+        const roomId = String(data.chatRoomId || data.chatRoomId);
+        const currentRoomId = String(selectedChatRoom.id);
+        
+        if (roomId === currentRoomId) {
+          // Add message to messages list
+          setMessages(prev => {
+            // Check if message already exists (prevent duplicates)
+            const exists = prev.some(msg => msg.id === data.message.id);
+            if (exists) return prev;
+            return [...prev, data.message];
+          });
+          scrollToBottom(true); // Force scroll when new message arrives
+          
+          // Update chat rooms list with new lastMessage
+          setChatRooms(prev => prev.map(room => {
+            if (room.id === selectedChatRoom.id) {
+              return {
+                ...room,
+                lastMessage: data.message.messageText,
+                lastMessageTime: data.message.createdAt,
+                lastMessageSenderId: data.message.sender.id,
+                unreadCount: 0 // Reset unread count when viewing
+              };
+            }
+            return room;
+          }));
+          
+          // Mark as read if it's not from current user (debounced)
+          if (data.message.sender.id !== user?.id) {
+            // Clear existing timeout
+            if (markAsReadTimeoutRef.current) {
+              clearTimeout(markAsReadTimeoutRef.current);
+            }
+            
+            // Debounce markAsRead to avoid multiple calls
+            markAsReadTimeoutRef.current = setTimeout(() => {
+              chatService.markAsRead(selectedChatRoom.id).catch(err => {
+                console.error('Error marking as read:', err);
+              });
+            }, 500);
+          }
+        }
+      };
+
+      const handleUnreadCountUpdate = (data) => {
+        console.log('📊 Unread count update:', data);
+        // Update global unread count via fetchUnreadMessages
+        // Use setTimeout to avoid calling during render
+        setTimeout(() => {
+          if (fetchUnreadMessages) {
+            fetchUnreadMessages();
+          }
+        }, 0);
+        
+        // Note: Chat rooms list will be updated via global new_message listener
+        // No need to refresh here to avoid infinite loops
+      };
+
+      const handleTyping = (data) => {
+        const roomId = String(data.chatRoomId || data.chatRoomId);
+        const currentRoomId = String(selectedChatRoom.id);
+        
+        if (roomId === currentRoomId && data.userId !== user?.id) {
+          // Clear existing timeout for this user
+          if (typingTimeoutRef.current[data.userId]) {
+            clearTimeout(typingTimeoutRef.current[data.userId]);
+          }
+          
+          // Add typing user
+          setTypingUsers(prev => ({ ...prev, [data.userId]: data.username }));
+          
+          // Clear typing after 3 seconds of inactivity
+          typingTimeoutRef.current[data.userId] = setTimeout(() => {
+            setTypingUsers(prev => {
+              const newState = { ...prev };
+              delete newState[data.userId];
+              return newState;
+            });
+            delete typingTimeoutRef.current[data.userId];
+          }, 3000);
+        }
+      };
+
+      const handleStopTyping = (data) => {
+        const roomId = String(data.chatRoomId || data.chatRoomId);
+        const currentRoomId = String(selectedChatRoom.id);
+        
+        if (roomId === currentRoomId && data.userId !== user?.id) {
+          // Clear timeout
+          if (typingTimeoutRef.current[data.userId]) {
+            clearTimeout(typingTimeoutRef.current[data.userId]);
+            delete typingTimeoutRef.current[data.userId];
+          }
+          
+          // Remove typing user
+          setTypingUsers(prev => {
+            const newState = { ...prev };
+            delete newState[data.userId];
+            return newState;
+          });
+        }
+      };
+
+      socket.on('new_message', handleNewMessage);
+      socket.on('unread_count_update', handleUnreadCountUpdate);
+      socket.on('user_typing', handleTyping);
+      socket.on('user_stop_typing', handleStopTyping);
+
+      return () => {
+        const roomId = String(selectedChatRoom.id);
+        
+        // Only leave if we actually joined
+        if (joinedRoomsRef.current.has(roomId)) {
+          socket.emit('leave_chat', selectedChatRoom.id);
+          socket.emit('typing_stop', { chatRoomId: selectedChatRoom.id });
+          joinedRoomsRef.current.delete(roomId);
+        }
+        
+        socket.off('new_message', handleNewMessage);
+        socket.off('unread_count_update', handleUnreadCountUpdate);
+        socket.off('user_typing', handleTyping);
+        socket.off('user_stop_typing', handleStopTyping);
+        
+        // Clear all typing timeouts
+        Object.values(typingTimeoutRef.current).forEach(timeout => clearTimeout(timeout));
+        typingTimeoutRef.current = {};
+        if (typingDebounceRef.current) {
+          clearTimeout(typingDebounceRef.current);
+          typingDebounceRef.current = null;
+        }
+        if (markAsReadTimeoutRef.current) {
+          clearTimeout(markAsReadTimeoutRef.current);
+          markAsReadTimeoutRef.current = null;
+        }
+        setTypingUsers({});
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChatRoom?.id, socket, user?.id]); // Only depend on IDs, not objects
+
+  // Auto-scroll when messages change (but only if user is near bottom)
+  useEffect(() => {
+    if (messages.length > 0 && selectedChatRoom) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        scrollToBottom(false); // Don't force, respect user scroll
+      }, 100);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, selectedChatRoom?.id]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      if (markAsReadTimeoutRef.current) {
+        clearTimeout(markAsReadTimeoutRef.current);
+      }
+      if (typingDebounceRef.current) {
+        clearTimeout(typingDebounceRef.current);
+      }
+      Object.values(typingTimeoutRef.current).forEach(timeout => clearTimeout(timeout));
+    };
+  }, []);
+
+  const selectChatRoom = async (room) => {
+    setSelectedChatRoom(room);
+    try {
+      const response = await chatService.getChatRoom(room.id);
+      setMessages(response.data.messages || []);
+      
+      // Mark as read and update unread count
+      try {
+        await chatService.markAsRead(room.id);
+        
+        // Update unread count in chat rooms list
+        setChatRooms(prev => prev.map(r => {
+          if (r.id === room.id) {
+            return { ...r, unreadCount: 0 };
+          }
+          return r;
+        }));
+        
+        // Refresh unread count
+        if (fetchUnreadMessages) {
+          fetchUnreadMessages();
+        }
+      } catch (err) {
+        console.error('Error marking as read:', err);
+      }
+      scrollToBottom(true); // Force scroll when selecting chat room
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast.error(t('chat.failedToLoadMessages'));
     }
   };
 
-  /**
-   * Send message
-   */
-  const handleSendMessage = async (e) => {
+  const sendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || sending || !selectedChatRoom) return;
+    if (!newMessage.trim() || !selectedChatRoom) return;
 
-    const messageText = newMessage.trim();
     setSending(true);
-    setNewMessage(''); // Clear input immediately
-
+    
+    // Stop typing indicator
+    if (socket) {
+      socket.emit('typing_stop', { chatRoomId: selectedChatRoom.id });
+    }
+    
     try {
-      console.log('📤 Sending message:', messageText);
-      await chatService.sendMessage(selectedChatRoom.id, messageText);
-      console.log('✅ Message sent successfully');
-
-      // ⚠️ DON'T add message to state here!
-      // Socket.IO will handle it via 'new_message' event
-      // This prevents duplicate messages
-
-      // Stop typing indicator
-      if (socket) {
-        socket.emit('typing_stop', { chatRoomId: selectedChatRoom.id });
+      const response = await chatService.sendMessage(selectedChatRoom.id, newMessage.trim());
+      
+      // Message will be added via socket event, but add it immediately for better UX
+      setMessages(prev => {
+        const exists = prev.some(msg => msg.id === response.data.message.id);
+        if (exists) return prev;
+        return [...prev, response.data.message];
+      });
+      
+      // Update chat rooms list
+      setChatRooms(prev => prev.map(room => {
+        if (room.id === selectedChatRoom.id) {
+          return {
+            ...room,
+            lastMessage: response.data.message.messageText,
+            lastMessageTime: response.data.message.createdAt,
+            lastMessageSenderId: response.data.message.sender.id,
+            unreadCount: 0 // Reset unread count for current user
+          };
+        }
+        return room;
+      }));
+      
+      setNewMessage('');
+      scrollToBottom();
+      
+      // Refresh unread count
+      if (fetchUnreadMessages) {
+        fetchUnreadMessages();
       }
-
-      // Refresh chat list
-      fetchChatRooms();
     } catch (error) {
-      console.error('❌ Failed to send message:', error);
-      toast.error('Failed to send message');
-      setNewMessage(messageText); // Restore message on error
+      console.error('Error sending message:', error);
+      const message = error.response?.data?.message || t('chat.failedToSendMessage');
+      toast.error(message);
     } finally {
       setSending(false);
     }
   };
 
-  /**
-   * Handle typing
-   */
-  const handleTyping = (e) => {
-    setNewMessage(e.target.value);
-
-    if (!socket || !selectedChatRoom) return;
-
-    // Emit typing_start
-    socket.emit('typing_start', { chatRoomId: selectedChatRoom.id });
-
-    // Clear previous timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+  const scrollToBottom = (force = false) => {
+    // Don't auto-scroll if user is manually scrolling (unless forced)
+    if (!force && isUserScrollingRef.current) {
+      return;
     }
-
-    // Set timeout to emit typing_stop
-    typingTimeoutRef.current = setTimeout(() => {
-      socket.emit('typing_stop', { chatRoomId: selectedChatRoom.id });
-    }, 1000);
+    
+    // Use scrollTop instead of scrollIntoView to avoid interfering with user scroll
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    } else {
+      // Fallback to scrollIntoView if ref not available
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
-  // ==========================================
-  // Socket.IO Listeners
-  // ==========================================
-
-  useEffect(() => {
-    if (!socket) return;
-
-    console.log('🔌 Setting up Socket.IO listeners...');
-
-    // New message
-    const handleNewMessage = (data) => {
-      console.log('📨 Received new message:', data);
+  // Handle scroll events to detect user scrolling
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    
+    const container = messagesContainerRef.current;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    
+    // If user scrolls away from bottom, mark as user scrolling
+    if (!isNearBottom) {
+      isUserScrollingRef.current = true;
       
-      // Update messages if in current chat
-      if (selectedChatRoom && data.chatRoomId === selectedChatRoom.id) {
-        setMessages(prev => {
-          // Prevent duplicates by checking message ID (primary check)
-          const exists = prev.some(m => m.id === data.message.id);
-          
-          if (exists) {
-            console.log('⚠️ Duplicate message detected, skipping:', data.message.id);
-            return prev;
-          }
-          
-          console.log('✅ Adding new message to chat:', data.message.id);
-          return [...prev, data.message];
-        });
-        setTimeout(() => scrollToBottom(), 100);
-
-        // Mark as read
-        chatService.markAsRead(data.chatRoomId);
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
       }
+      
+      // Reset after 2 seconds of no scrolling
+      scrollTimeoutRef.current = setTimeout(() => {
+        isUserScrollingRef.current = false;
+      }, 2000);
+    } else {
+      // User is near bottom, allow auto-scroll
+      isUserScrollingRef.current = false;
+    }
+  };
 
-      // Refresh chat list
-      fetchChatRooms();
-    };
-
-    // Typing indicator
-    const handleUserTyping = (data) => {
-      console.log('⌨️ User typing:', data);
-      if (selectedChatRoom && data.chatRoomId === selectedChatRoom.id) {
-        setTypingUsers(prev => new Set(prev).add(data.userId));
-      }
-    };
-
-    // Stop typing
-    const handleUserStopTyping = (data) => {
-      console.log('⌨️ User stopped typing:', data);
-      setTypingUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(data.userId);
-        return newSet;
-      });
-    };
-
-    // Unread count update
-    const handleUnreadCountUpdate = (data) => {
-      console.log('📊 Unread count update:', data);
-      setUnreadCount(data.unreadCount || 0);
-    };
-
-    // Register listeners
-    socket.on('new_message', handleNewMessage);
-    socket.on('user_typing', handleUserTyping);
-    socket.on('user_stop_typing', handleUserStopTyping);
-    socket.on('unread_count_update', handleUnreadCountUpdate);
-
-    // Cleanup
-    return () => {
-      console.log('🔌 Cleaning up Socket.IO listeners');
-      socket.off('new_message', handleNewMessage);
-      socket.off('user_typing', handleUserTyping);
-      socket.off('user_stop_typing', handleUserStopTyping);
-      socket.off('unread_count_update', handleUnreadCountUpdate);
-    };
-  }, [socket, selectedChatRoom, fetchChatRooms]);
-
-  // ==========================================
-  // Lifecycle
-  // ==========================================
-
-  // Initial fetch
-  useEffect(() => {
-    fetchChatRooms();
-    fetchUnreadCount();
-  }, [fetchChatRooms, fetchUnreadCount]);
-
-  // Auto-scroll on messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Leave chat room on unmount
-  useEffect(() => {
-    return () => {
-      if (socket && selectedChatRoom) {
-        socket.emit('leave_chat', selectedChatRoom.id);
-      }
-    };
-  }, [socket, selectedChatRoom]);
-
-  // ==========================================
-  // Render
-  // ==========================================
+  const getOtherParticipant = (room) => {
+    if (!room.participants) return null;
+    return room.participants.find(p => p.id !== user?.id);
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="spinner"></div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center py-12">
+          <div className="spinner"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
-              <FiMessageSquare className="text-primary-600" />
-              {t('chat.messages')}
-              {unreadCount > 0 && (
-                <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </h1>
-          </div>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">{t('chat.messages')}</h1>
 
-          {/* Chat Container */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ height: 'calc(100vh - 250px)', minHeight: '600px' }}>
-            {/* Left Sidebar - Chat List */}
-            <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden flex flex-col">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
-                  Conversations
-                </h2>
-              </div>
-
-              <div className="flex-1 overflow-y-auto">
-                {chatRooms.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                    <FiMessageSquare className="mx-auto text-5xl mb-3 opacity-30" />
-                    <p>No conversations yet</p>
-                    <p className="text-sm mt-2">Start a chat by messaging an item owner</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {chatRooms.map(chatRoom => {
-                      const otherUser = getOtherParticipant(chatRoom);
-                      if (!otherUser) return null;
-
-                      return (
-                        <button
-                          key={chatRoom.id}
-                          onClick={() => handleSelectChatRoom(chatRoom)}
-                          className={`w-full p-4 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                            selectedChatRoom?.id === chatRoom.id
-                              ? 'bg-primary-50 dark:bg-primary-900/20 border-l-4 border-primary-600'
-                              : ''
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            {/* Avatar */}
-                            <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                              {otherUser.username?.charAt(0).toUpperCase() || '?'}
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h3 className="font-semibold text-gray-800 dark:text-white truncate">
-                                  {otherUser.username || 'Unknown User'}
-                                </h3>
-                                {chatRoom.lastMessageTime && (
-                                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
-                                    {formatLastMessageTime(chatRoom.lastMessageTime)}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                {chatRoom.lastMessage || 'No messages yet'}
-                              </p>
-                            </div>
-
-                            {/* Unread Badge */}
-                            {chatRoom.unreadCount > 0 && (
-                              <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full flex-shrink-0">
-                                {chatRoom.unreadCount}
-                              </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Panel - Chat Window */}
-            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden flex flex-col">
-              {selectedChatRoom ? (
-                <>
-                  {/* Chat Header */}
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 flex-shrink-0">
-                    <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold">
-                      {getOtherParticipant(selectedChatRoom)?.username?.charAt(0).toUpperCase() || '?'}
-                    </div>
-                    <div>
-                      <h2 className="font-semibold text-lg text-gray-800 dark:text-white">
-                        {getOtherParticipant(selectedChatRoom)?.username || 'Unknown User'}
-                      </h2>
-                      {typingUsers.size > 0 && (
-                        <p className="text-sm text-primary-600 italic">typing...</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+        {/* Chat Rooms List */}
+        <div className="lg:col-span-1 card overflow-hidden flex flex-col">
+          <h2 className="text-xl font-bold mb-4">{t('chat.conversations')}</h2>
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {chatRooms.length > 0 ? (
+              chatRooms.map(room => {
+                const otherUser = getOtherParticipant(room);
+                const isSelected = selectedChatRoom?.id === room.id;
+                return (
+                  <div
+                    key={room.id}
+                    onClick={() => selectChatRoom(room)}
+                    className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-primary-100 dark:bg-primary-900'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">
+                          {otherUser?.username || t('chat.unknown')}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                          {room.lastMessage || t('chat.noMessagesYet')}
+                        </p>
+                      </div>
+                      {room.unreadCount > 0 && (
+                        <span className="badge badge-error">{room.unreadCount}</span>
                       )}
                     </div>
                   </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <FiMessageSquare className="w-12 h-12 mx-auto mb-2" />
+                <p>{t('chat.noConversationsYet')}</p>
+              </div>
+            )}
+          </div>
+        </div>
 
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900">
-                    {messages.length === 0 ? (
-                      <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                        <p>No messages yet. Start the conversation!</p>
-                      </div>
-                    ) : (
-                      <>
-                        {messages.map((message, index) => {
-                          if (!message || !message.sender) return null;
-                          const isOwn = message.sender.id === user.id;
+        {/* Chat Window */}
+        <div className="lg:col-span-2 card overflow-hidden flex flex-col">
+          {selectedChatRoom ? (
+            <>
+              {/* Header */}
+              <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+                <h2 className="text-xl font-bold">
+                  {getOtherParticipant(selectedChatRoom)?.username || t('chat.unknown')}
+                </h2>
+              </div>
 
-                          return (
-                            <div
-                              key={message.id || index}
-                              className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                            >
-                              <div
-                                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                                  isOwn
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-white'
-                                }`}
-                                style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
-                              >
-                                <p className="whitespace-pre-wrap">{message.messageText}</p>
-                                <span
-                                  className={`text-xs block mt-1 ${
-                                    isOwn ? 'text-primary-100' : 'text-gray-500 dark:text-gray-400'
-                                  }`}
-                                >
-                                  {formatMessageTime(message.createdAt)}
-                                  {message.isRead && isOwn && ' ✓✓'}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        <div ref={messagesEndRef} />
-                      </>
-                    )}
-                  </div>
-
-                  {/* Message Input */}
-                  <form
-                    onSubmit={handleSendMessage}
-                    className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2 flex-shrink-0"
-                  >
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={handleTyping}
-                      placeholder="Type a message..."
-                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
-                      autoComplete="off"
-                      disabled={sending}
-                    />
-                    <button
-                      type="submit"
-                      disabled={sending || !newMessage.trim()}
-                      className="btn-primary px-6 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50"
+              {/* Messages */}
+              <div 
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-4"
+                onScroll={handleScroll}
+                style={{ minHeight: 0 }} // Ensure flex-1 works properly
+              >
+                {messages.map(msg => {
+                  const isOwn = msg.sender.id === user?.id;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                     >
-                      <FiSend />
-                      Send
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                  <div className="text-center">
-                    <FiMessageSquare className="mx-auto text-6xl mb-4 opacity-30" />
-                    <p className="text-lg">Select a conversation to start messaging</p>
-                  </div>
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          isOwn
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700'
+                        }`}
+                      >
+                        <p>{msg.messageText}</p>
+                        <p className={`text-xs mt-1 ${
+                          isOwn ? 'text-primary-100' : 'text-gray-500'
+                        }`}>
+                          {format(new Date(msg.createdAt), 'HH:mm')}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Typing Indicator */}
+              {Object.keys(typingUsers).length > 0 && (
+                <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 italic">
+                  {Object.values(typingUsers).join(', ')} {t('chat.typing')}...
                 </div>
               )}
+
+              {/* Input */}
+              <form onSubmit={sendMessage} className="border-t border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      
+                      // Debounce typing indicator (emit after 500ms of inactivity)
+                      if (socket && selectedChatRoom) {
+                        // Clear existing debounce
+                        if (typingDebounceRef.current) {
+                          clearTimeout(typingDebounceRef.current);
+                        }
+                        
+                        if (e.target.value.trim()) {
+                          // Emit typing_start after 500ms
+                          typingDebounceRef.current = setTimeout(() => {
+                            socket.emit('typing_start', { chatRoomId: selectedChatRoom.id });
+                          }, 500);
+                        } else {
+                          // Emit typing_stop immediately when empty
+                          socket.emit('typing_stop', { chatRoomId: selectedChatRoom.id });
+                        }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage(e);
+                      }
+                    }}
+                    className="input-field flex-1"
+                    placeholder={t('chat.typeMessage')}
+                    disabled={sending}
+                  />
+                  <button
+                    type="submit"
+                    disabled={sending || !newMessage.trim()}
+                    className="btn-primary"
+                  >
+                    <FiSend className="w-5 h-5" />
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-500">
+              <div className="text-center">
+                <FiMessageSquare className="w-16 h-16 mx-auto mb-4" />
+                <p>{t('chat.selectConversation')}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

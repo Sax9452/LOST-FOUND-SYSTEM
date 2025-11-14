@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
 import { notificationService, chatService } from '../api/services';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ export const useApp = () => {
 
 export const AppProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
+  const { t } = useTranslation();
   const [socket, setSocket] = useState(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -88,7 +90,7 @@ export const AppProvider = ({ children }) => {
         console.log('💬 New message received:', data);
         // Don't show toast if already in chat page (handled there)
         if (!window.location.pathname.startsWith('/chat')) {
-          toast('New message received', {
+          toast(t('chat.newMessageReceived'), {
             icon: '💬',
             duration: 4000,
           });
@@ -118,25 +120,26 @@ export const AppProvider = ({ children }) => {
         setSocket(null);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await notificationService.getUnreadCount();
       setUnreadNotifications(response.data.unreadCount);
     } catch (error) {
       console.error('Error fetching unread notifications:', error);
     }
-  };
+  }, []);
 
-  const fetchUnreadMessages = async () => {
+  const fetchUnreadMessages = useCallback(async () => {
     try {
       const response = await chatService.getUnreadCount();
       setUnreadMessages(response.data.unreadCount || 0);
     } catch (error) {
       console.error('Error fetching unread messages:', error);
     }
-  };
+  }, []);
 
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;

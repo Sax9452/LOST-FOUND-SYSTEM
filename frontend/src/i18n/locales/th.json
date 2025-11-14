@@ -95,7 +95,8 @@
     },
     "recentItems": {
       "title": "ประกาศล่าสุด",
-      "viewAll": "ดูทั้งหมด"
+      "viewAll": "ดูทั้งหมด",
+      "noItems": "ยังไม่มีประกาศ"
     }
   },
   "items": {
@@ -116,7 +117,7 @@
       "successReturn": "ยินดีด้วย! คืนเจ้าของเรียบร้อยแล้ว",
       "deleteWillRemove": "รายการนี้จะถูกลบออกจากระบบ และผู้อื่นจะไม่สามารถดูได้อีกต่อไป",
       "cannotUndo": "การดำเนินการนี้ไม่สามารถย้อนกลับได้",
-      "messageOwner": "ติดต่อเจ้าของ",
+      "messageOwner": "ติดต่อ",
       "contactSeller": "ติดต่อผู้ลงประกาศ"
     },
     "category": {
@@ -133,8 +134,11 @@
       "active": "กำลังหา",
       "pending": "รอดำเนินการ",
       "matched": "จับคู่แล้ว",
+      "returned": "ส่งคืนแล้ว",
+      "archived": "เก็บถาวร",
       "resolved": "แก้ไขแล้ว"
     },
+    "imageCount": "รูป",
     "details": {
       "title": "รายละเอียด",
       "itemName": "ชื่อสิ่งของ",
@@ -143,11 +147,40 @@
       "location": "สถานที่",
       "date": "วันที่",
       "status": "สถานะ",
-      "contactOwner": "ติดต่อเจ้าของ",
+      "contactOwner": "ติดต่อ",
       "reportFound": "แจ้งพบสิ่งของ",
       "editItem": "แก้ไขประกาศ",
       "deleteItem": "ลบประกาศ",
-      "confirmDelete": "คุณแน่ใจหรือไม่ที่จะลบประกาศนี้?"
+      "confirmDelete": "คุณแน่ใจหรือไม่ที่จะลบประกาศนี้?",
+      "backToSearch": "กลับไปค้นหา",
+      "noImage": "ไม่มีรูปภาพ",
+      "descriptionLabel": "รายละเอียด",
+      "categoryLabel": "หมวดหมู่",
+      "locationLabel": "สถานที่",
+      "dateLabel": "วันที่",
+      "statusLabel": "สถานะ",
+      "loginToContact": "เข้าสู่ระบบเพื่อติดต่อ",
+      "potentialMatches": "รายการที่อาจตรงกัน",
+      "confirmDeleteTitle": "ยืนยันการลบ",
+      "confirmDeleteMessage": "คุณแน่ใจหรือไม่ที่จะลบรายการนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้",
+      "cancel": "ยกเลิก",
+      "delete": "ลบ",
+      "itemNotFound": "ไม่พบรายการ",
+      "failedToStartChat": "ไม่สามารถเริ่มแชท",
+      "itemDeletedSuccessfully": "ลบรายการสำเร็จ",
+      "failedToDeleteItem": "ไม่สามารถลบรายการ",
+      "itemUpdatedSuccessfully": "อัปเดตรายการสำเร็จ",
+      "failedToUpdateItem": "ไม่สามารถอัปเดตรายการ",
+      "typeCannotBeChanged": "ไม่สามารถเปลี่ยนประเภทได้",
+      "updateStatus": "อัปเดตสถานะ",
+      "updateStatusTitle": "อัปเดตสถานะสิ่งของ",
+      "selectStatus": "เลือกสถานะ",
+      "statusUpdatedSuccessfully": "อัปเดตสถานะสำเร็จ",
+      "failedToUpdateStatus": "ไม่สามารถอัปเดตสถานะ",
+      "update": "อัปเดต",
+      "noStatusChange": "ไม่สามารถเปลี่ยนสถานะได้",
+      "cannotChangeStatus": "ไม่สามารถเปลี่ยนสถานะจาก archived ได้",
+      "selectMatchedItem": "เลือกสิ่งของที่ตรงกัน"
     },
     "post": {
       "title": "ลงประกาศ",
@@ -161,6 +194,18 @@
       "itemNamePlaceholder": "เช่น iPhone 13 Pro, บัตรนักศึกษา",
       "selectCategory": "-- เลือกหมวดหมู่ --",
       "categoryHint": "เลือกหมวดหมู่ที่ตรงกับสิ่งของของคุณ",
+      "itemNameLabel": "ชื่อสิ่งของ *",
+      "categoryLabel": "หมวดหมู่ *",
+      "lostOption": "ของหาย",
+      "foundOption": "เจอของ",
+      "electronicsLabel": "อุปกรณ์อิเล็กทรอนิกส์",
+      "documentsLabel": "เอกสาร",
+      "accessoriesLabel": "เครื่องประดับ",
+      "bagsLabel": "กระเป๋า",
+      "clothingLabel": "เสื้อผ้า",
+      "keysLabel": "กุญแจ",
+      "walletLabel": "กระเป๋าเงิน",
+      "otherLabel": "อื่นๆ",
       "detailedDescription": "คำอธิบายโดยละเอียด",
       "descriptionPlaceholder": "ให้รายละเอียดมากที่สุดเท่าที่จะเป็นไปได้ (สี, ยี่ห้อ, ลักษณะเด่น ฯลฯ)",
       "characters": "ตัวอักษร",
@@ -187,12 +232,42 @@
       "title": "ค้นหาสิ่งของ",
       "searchPlaceholder": "ค้นหาด้วยชื่อ, คำอธิบาย...",
       "noResults": "ไม่พบผลลัพธ์",
-      "results": "ผลลัพธ์"
+      "results": "ผลลัพธ์",
+      "searchByKeyword": "ค้นหาด้วยคำค้นหา...",
+      "searchButton": "ค้นหา",
+      "filters": "ตัวกรอง",
+      "type": "ประเภท",
+      "category": "หมวดหมู่",
+      "location": "สถานที่",
+      "locationPlaceholder": "กรอกสถานที่...",
+      "dateFrom": "วันที่เริ่มต้น",
+      "dateTo": "วันที่สิ้นสุด",
+      "selectDate": "เลือกวันที่",
+      "sortBy": "เรียงตาม",
+      "all": "ทั้งหมด",
+      "allCategories": "ทุกหมวดหมู่",
+      "newestFirst": "ใหม่สุดก่อน",
+      "oldestFirst": "เก่าสุดก่อน",
+      "mostRecentDate": "วันที่ล่าสุด",
+      "clearAllFilters": "ล้างตัวกรองทั้งหมด",
+      "showingResults": "แสดงผล {{count}} รายการ",
+      "previous": "ก่อนหน้า",
+      "next": "ถัดไป",
+      "page": "หน้า {{current}} จาก {{total}}",
+      "noItemsFound": "ไม่พบรายการ ลองค้นหาหรือกรองคำอื่น"
     },
     "myItems": {
       "title": "ของของฉัน",
       "noItems": "คุณยังไม่มีประกาศ",
-      "createFirst": "สร้างประกาศแรกของคุณ"
+      "createFirst": "สร้างประกาศแรกของคุณ",
+      "postNewItem": "ลงประกาศใหม่",
+      "noItemsFound": "ไม่พบรายการ",
+      "postFirstItem": "ลงประกาศแรกของคุณ",
+      "all": "ทั้งหมด",
+      "pending": "รอดำเนินการ",
+      "active": "กำลังหา",
+      "matched": "จับคู่แล้ว",
+      "returned": "คืนเจ้าของแล้ว"
     }
   },
   "chat": {
@@ -208,7 +283,17 @@
     "offline": "ออฟไลน์",
     "typing": "กำลังพิมพ์...",
     "selectChat": "เลือกแชทเพื่อดูข้อความ",
-    "recently": "เมื่อเร็วๆ นี้"
+    "recently": "เมื่อเร็วๆ นี้",
+    "conversations": "การสนทนา",
+    "noConversationsYet": "ยังไม่มีการสนทนา",
+    "unknown": "ไม่ทราบชื่อ",
+    "noMessagesYet": "ยังไม่มีข้อความ",
+    "typeMessage": "พิมพ์ข้อความ...",
+    "selectConversation": "เลือกการสนทนาเพื่อเริ่มแชท",
+    "failedToLoadChatRooms": "ไม่สามารถโหลดการสนทนา",
+    "failedToLoadMessages": "ไม่สามารถโหลดข้อความ",
+    "failedToSendMessage": "ไม่สามารถส่งข้อความ",
+    "newMessageReceived": "มีข้อความใหม่"
   },
   "notifications": {
     "title": "การแจ้งเตือน",
@@ -230,7 +315,15 @@
       "match": "จับคู่",
       "message": "ข้อความ",
       "system": "ระบบ"
-    }
+    },
+    "markAllAsReadButton": "ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว",
+    "markAsReadTitle": "ทำเครื่องหมายว่าอ่านแล้ว",
+    "deleteTitle": "ลบ",
+    "noNotificationsMessage": "คุณยังไม่มีการแจ้งเตือน",
+    "failedToMarkAsRead": "ไม่สามารถทำเครื่องหมายว่าอ่านแล้ว",
+    "allNotificationsMarkedAsRead": "ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว",
+    "failedToMarkAllAsRead": "ไม่สามารถทำเครื่องหมายทั้งหมด",
+    "failedToDeleteNotification": "ไม่สามารถลบการแจ้งเตือน"
   },
   "profile": {
     "title": "โปรไฟล์",
@@ -247,7 +340,28 @@
     "language": "ภาษา",
     "notifications": "การแจ้งเตือน",
     "emailNotifications": "แจ้งเตือนทางอีเมล",
-    "pushNotifications": "แจ้งเตือนแบบพุช"
+    "pushNotifications": "แจ้งเตือนแบบพุช",
+    "profileSettings": "ตั้งค่าโปรไฟล์",
+    "profileInformation": "ข้อมูลโปรไฟล์",
+    "password": "รหัสผ่าน",
+    "emailCannotBeChanged": "ไม่สามารถเปลี่ยนอีเมลได้",
+    "optional": "ไม่บังคับ",
+    "cityCountry": "เมือง, ประเทศ",
+    "english": "English",
+    "thai": "ไทย (Thai)",
+    "saveChanges": "บันทึกการเปลี่ยนแปลง",
+    "notificationPreferences": "การตั้งค่าการแจ้งเตือน",
+    "receiveEmailNotifications": "รับการแจ้งเตือนทางอีเมล",
+    "receivePushNotifications": "รับการแจ้งเตือนแบบเรียลไทม์",
+    "matchAlerts": "แจ้งเตือนการจับคู่",
+    "getNotifiedWhenMatchesFound": "รับการแจ้งเตือนเมื่อพบการจับคู่ที่อาจเป็นไปได้",
+    "savePreferences": "บันทึกการตั้งค่า",
+    "passwordNotMatch": "รหัสผ่านไม่ตรงกัน",
+    "passwordMinLength": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+    "updatePasswordSuccess": "อัปเดตรหัสผ่านสำเร็จ",
+    "updatePasswordError": "ไม่สามารถอัปเดตรหัสผ่าน",
+    "updatePreferencesSuccess": "อัปเดตการตั้งค่าการแจ้งเตือนสำเร็จ",
+    "updatePreferencesError": "ไม่สามารถอัปเดตการตั้งค่า"
   },
   "dashboard": {
     "title": "แดชบอร์ด",
@@ -261,7 +375,20 @@
     "viewNotifications": "ดูการแจ้งเตือน",
     "myItemsCount": "รายการของฉัน",
     "unreadMessages": "ข้อความที่ยังไม่ได้อ่าน",
-    "activeChats": "แชทที่กำลังใช้งาน"
+    "activeChats": "แชทที่กำลังใช้งาน",
+    "welcomeBack": "ยินดีต้อนกลับ, {{username}}!",
+    "totalItems": "รายการทั้งหมด",
+    "active": "กำลังหา",
+    "matched": "จับคู่แล้ว",
+    "returned": "คืนเจ้าของแล้ว",
+    "viewAndManage": "ดูและจัดการประกาศของคุณ",
+    "noItemsYet": "ยังไม่มีรายการ",
+    "startPosting": "เริ่มจากการลงประกาศรายการแรกที่หายหรือพบ",
+    "postItem": "ลงประกาศ",
+    "communityImpact": "ผลกระทบต่อชุมชน",
+    "successfullyReturned": "คืนเจ้าของแล้ว",
+    "activeListings": "รายการที่ใช้งานอยู่",
+    "successRate": "อัตราความสำเร็จ"
   },
   "admin": {
     "title": "ผู้ดูแลระบบ",
@@ -275,7 +402,7 @@
   },
   "footer": {
     "title": "Lost & Found System",
-    "description": "ช่วยให้สิ่งของที่หายกลับคืนสู่เจ้าของผ่านระบบจับคู่อัจฉริยะและชุมชนที่ร่วมมือกัน",
+    "description": "ช่วยให้สิ่งของที่หายกลับคืนสู่เจ้าของ",
     "quickLinks": "ลิงก์ด่วน",
     "home": "หน้าแรก",
     "searchItems": "ค้นหาสิ่งของ",
@@ -286,6 +413,12 @@
     "privacyPolicy": "นโยบายความเป็นส่วนตัว",
     "connect": "ติดต่อเรา",
     "copyright": "© {{year}} Lost & Found System. สงวนลิขสิทธิ์"
+  },
+  "notFound": {
+    "title": "404",
+    "heading": "ไม่พบหน้า",
+    "message": "หน้าที่คุณกำลังมองหาไม่มีอยู่หรือถูกย้ายไปแล้ว",
+    "backToHome": "กลับหน้าแรก"
   }
 }
 

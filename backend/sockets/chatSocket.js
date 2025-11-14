@@ -22,7 +22,7 @@ module.exports = (io) => {
       // Verify JWT token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Get user from database
+      // Get user from storage
       const user = await User.findById(decoded.id);
       
       if (!user) {
@@ -58,14 +58,14 @@ module.exports = (io) => {
     // ==========================================
     socket.on('join_chat', async (chatRoomId) => {
       try {
-        // Validate input
-        if (!chatRoomId || typeof chatRoomId !== 'number') {
+        // Validate input (chatRoomId is UUID string)
+        if (!chatRoomId || typeof chatRoomId !== 'string') {
           console.log(`❌ ${socket.username} sent invalid chat room ID: ${chatRoomId}`);
           socket.emit('error', { message: 'Invalid chat room ID' });
           return;
         }
         
-        // Check if user is participant in this chat room
+        // Check if user is participant
         const { ChatRoom } = require('../models/db');
         const isParticipant = await ChatRoom.isParticipant(chatRoomId, socket.userId);
         
@@ -180,8 +180,11 @@ module.exports = (io) => {
     console.log(`📨 Emitting new message to room: ${roomName}`);
     console.log(`   Message:`, message);
     
+    // Ensure chatRoomId is string (UUID)
+    const roomIdString = String(chatRoomId);
+    
     io.to(roomName).emit('new_message', {
-      chatRoomId,
+      chatRoomId: roomIdString,
       message
     });
   };

@@ -99,9 +99,6 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg items-center justify-center hidden md:flex">
-              <span className="text-white font-bold text-xl">L&F</span>
-            </div>
             <span className="font-bold text-xl text-gray-900 dark:text-white">
               Lost & Found System
             </span>

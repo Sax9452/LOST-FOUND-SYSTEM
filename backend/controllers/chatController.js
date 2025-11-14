@@ -28,36 +28,41 @@ exports.getChatRooms = async (req, res, next) => {
 };
 
 /**
- * @desc    Get or create chat room with another user
+ * @desc    Start a new chat or get existing chat with another user
  * @route   POST /api/chats/start
  * @access  Private
  */
 exports.startChat = async (req, res, next) => {
   try {
     const { recipientId } = req.body;
-    const currentUserId = req.user.id;
 
-    // Validate recipient exists
-    const recipient = await User.findById(recipientId);
-    if (!recipient) {
-      return res.status(404).json({
+    if (!recipientId) {
+      return res.status(400).json({
         success: false,
-        message: 'Recipient user not found'
+        message: 'Recipient ID is required'
       });
     }
 
-    // Cannot chat with yourself
-    if (currentUserId === recipientId) {
+    if (recipientId === req.user.id) {
       return res.status(400).json({
         success: false,
         message: 'Cannot start chat with yourself'
       });
     }
 
-    // Get or create chat room
-    const chatRoom = await ChatRoom.getOrCreate(currentUserId, recipientId);
+    // Check if recipient exists
+    const recipient = await User.findById(recipientId);
+    if (!recipient) {
+      return res.status(404).json({
+        success: false,
+        message: 'Recipient not found'
+      });
+    }
 
-    res.status(201).json({
+    // Get or create chat room
+    const chatRoom = await ChatRoom.getOrCreate(req.user.id, recipientId);
+
+    res.json({
       success: true,
       chatRoom
     });
@@ -74,10 +79,17 @@ exports.startChat = async (req, res, next) => {
  */
 exports.getChatRoom = async (req, res, next) => {
   try {
-    const chatRoomId = parseInt(req.params.id);
-    const userId = req.user.id;
+    const chatRoomId = req.params.id;
 
-    // Verify chat room exists
+    // Check if user is participant
+    const isParticipant = await ChatRoom.isParticipant(chatRoomId, req.user.id);
+    if (!isParticipant) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this chat room'
+      });
+    }
+
     const chatRoom = await ChatRoom.findById(chatRoomId);
     if (!chatRoom) {
       return res.status(404).json({
@@ -86,27 +98,13 @@ exports.getChatRoom = async (req, res, next) => {
       });
     }
 
-    // Verify user is participant
-    const isParticipant = await ChatRoom.isParticipant(chatRoomId, userId);
-    if (!isParticipant) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not a participant in this chat'
-      });
-    }
-
     // Get messages
     const messages = await Message.findByChatRoom(chatRoomId);
 
-    // Mark messages as read
-    await Message.markAsRead(chatRoomId, userId);
-
     res.json({
       success: true,
-      chatRoom: {
-        ...chatRoom,
-        messages
-      }
+      chatRoom,
+      messages
     });
   } catch (error) {
     console.error('getChatRoom error:', error);
@@ -115,38 +113,43 @@ exports.getChatRoom = async (req, res, next) => {
 };
 
 /**
- * @desc    Send message in a chat room
+ * @desc    Send a message in a chat room
  * @route   POST /api/chats/:id/messages
  * @access  Private
  */
 exports.sendMessage = async (req, res, next) => {
   try {
-    const chatRoomId = parseInt(req.params.id);
+    const chatRoomId = req.params.id;
     const { messageText } = req.body;
-    const senderId = req.user.id;
 
-    // Verify user is participant
-    const isParticipant = await ChatRoom.isParticipant(chatRoomId, senderId);
+    if (!messageText || !messageText.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message cannot be empty'
+      });
+    }
+
+    // Check if user is participant
+    const isParticipant = await ChatRoom.isParticipant(chatRoomId, req.user.id);
     if (!isParticipant) {
       return res.status(403).json({
         success: false,
-        message: 'You are not a participant in this chat'
+        message: 'Not authorized to send message in this chat room'
       });
     }
 
     // Create message
-    const message = await Message.create(chatRoomId, senderId, messageText);
+    const message = await Message.create(chatRoomId, req.user.id, messageText.trim());
 
-    // Get sender info
-    const sender = await User.findById(senderId);
-
-    // Format response
-    const formattedMessage = {
+    // Populate sender info
+    const sender = await User.findById(req.user.id);
+    const messageWithSender = {
       id: message.id,
       chatRoomId: message.chat_room_id,
       messageText: message.message_text,
       createdAt: message.created_at,
       isRead: message.is_read,
+      readAt: message.read_at,
       sender: {
         id: sender.id,
         username: sender.username,
@@ -154,25 +157,34 @@ exports.sendMessage = async (req, res, next) => {
       }
     };
 
-    // Emit real-time message via Socket.IO
-    if (io && io.emitNewMessage) {
-      io.emitNewMessage(chatRoomId, formattedMessage);
-      console.log(`📨 Real-time message emitted for chat room ${chatRoomId}`);
+    // Emit to Socket.IO
+    if (io) {
+      io.emitNewMessage(chatRoomId, messageWithSender);
+      
+      // Update unread count for recipient (not sender)
+      const chatRoom = await ChatRoom.findById(chatRoomId);
+      if (chatRoom) {
+        const recipientId = chatRoom.user1_id === req.user.id 
+          ? chatRoom.user2_id 
+          : chatRoom.user1_id;
+        
+        // Get unread count for recipient (will increase by 1)
+        const recipientUnreadCount = await Message.getTotalUnreadCount(recipientId);
+        io.emitUnreadCount(recipientId, recipientUnreadCount);
+        
+        // Only emit for sender if they have unread messages in other rooms
+        // (sender's current room should already be marked as read if they're viewing it)
+        const senderUnreadCount = await Message.getTotalUnreadCount(req.user.id);
+        // Only emit if sender has unread messages (to avoid unnecessary emits)
+        if (senderUnreadCount > 0) {
+          io.emitUnreadCount(req.user.id, senderUnreadCount);
+        }
+      }
     }
 
-    // Get chat room to find the other participant
-    const chatRoom = await ChatRoom.findById(chatRoomId);
-    const recipientId = chatRoom.participants.find(p => p.id !== senderId)?.id;
-    
-    // Update unread count for recipient
-    if (io && io.emitUnreadCount && recipientId) {
-      const unreadCount = await Message.getTotalUnreadCount(recipientId);
-      io.emitUnreadCount(recipientId, unreadCount);
-    }
-    
     res.status(201).json({
       success: true,
-      message: formattedMessage
+      message: messageWithSender
     });
   } catch (error) {
     console.error('sendMessage error:', error);
@@ -181,25 +193,34 @@ exports.sendMessage = async (req, res, next) => {
 };
 
 /**
- * @desc    Mark messages as read
+ * @desc    Mark all messages in chat room as read
  * @route   PUT /api/chats/:id/read
  * @access  Private
  */
 exports.markAsRead = async (req, res, next) => {
   try {
-    const chatRoomId = parseInt(req.params.id);
-    const userId = req.user.id;
+    const chatRoomId = req.params.id;
 
-    // Verify user is participant
-    const isParticipant = await ChatRoom.isParticipant(chatRoomId, userId);
+    // Check if user is participant
+    const isParticipant = await ChatRoom.isParticipant(chatRoomId, req.user.id);
     if (!isParticipant) {
       return res.status(403).json({
         success: false,
-        message: 'You are not a participant in this chat'
+        message: 'Not authorized to access this chat room'
       });
     }
 
-    await Message.markAsRead(chatRoomId, userId);
+    const previousUnreadCount = await Message.getTotalUnreadCount(req.user.id);
+    await Message.markAsRead(chatRoomId, req.user.id);
+
+    // Emit unread count update only if count changed
+    if (io) {
+      const newUnreadCount = await Message.getTotalUnreadCount(req.user.id);
+      // Only emit if count actually changed
+      if (previousUnreadCount !== newUnreadCount) {
+        io.emitUnreadCount(req.user.id, newUnreadCount);
+      }
+    }
 
     res.json({
       success: true,
@@ -212,18 +233,17 @@ exports.markAsRead = async (req, res, next) => {
 };
 
 /**
- * @desc    Get unread message count
+ * @desc    Get total unread message count
  * @route   GET /api/chats/unread/count
  * @access  Private
  */
 exports.getUnreadCount = async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const totalUnread = await Message.getTotalUnreadCount(userId);
+    const unreadCount = await Message.getTotalUnreadCount(req.user.id);
 
     res.json({
       success: true,
-      unreadCount: totalUnread
+      unreadCount
     });
   } catch (error) {
     console.error('getUnreadCount error:', error);

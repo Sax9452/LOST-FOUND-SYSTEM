@@ -24,11 +24,10 @@ router.post(
   protect,
   [
     body('recipientId')
-      .isInt({ min: 1 })
-      .withMessage('Invalid recipient ID')
+      .notEmpty()
+      .withMessage('Recipient ID is required')
       .custom((value, { req }) => {
-        // Prevent starting chat with yourself
-        if (parseInt(value) === req.user.id) {
+        if (value === req.user.id) {
           throw new Error('Cannot start chat with yourself');
         }
         return true;
@@ -51,8 +50,8 @@ router.get(
   protect,
   [
     param('id')
-      .isInt({ min: 1 })
-      .withMessage('Invalid chat room ID')
+      .notEmpty()
+      .withMessage('Chat room ID is required')
   ],
   validate,
   chatController.getChatRoom
@@ -67,8 +66,8 @@ router.post(
   messageLimiter,
   [
     param('id')
-      .isInt({ min: 1 })
-      .withMessage('Invalid chat room ID'),
+      .notEmpty()
+      .withMessage('Chat room ID is required'),
     body('messageText')
       .trim()
       .notEmpty()
@@ -88,8 +87,8 @@ router.put(
   protect,
   [
     param('id')
-      .isInt({ min: 1 })
-      .withMessage('Invalid chat room ID')
+      .notEmpty()
+      .withMessage('Chat room ID is required')
   ],
   validate,
   chatController.markAsRead

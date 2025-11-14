@@ -1,8 +1,8 @@
-const { Notification, User } = require('../models/db');
+const { User, Notification } = require('../models/db');
 const socketManager = require('../socket');
 
 /**
- * สร้างการแจ้งเตือน
+ * สร้างการแจ้งเตือน (Persisted in-memory storage)
  */
 exports.createNotification = async (data) => {
   try {
@@ -13,7 +13,17 @@ exports.createNotification = async (data) => {
     console.log(`   Type: ${type}`);
     console.log(`   Title: ${title}`);
 
-    // สร้างการแจ้งเตือนในฐานข้อมูล
+    // ดึงข้อมูลผู้ใช้
+    const user = await User.findById(recipient);
+
+    if (!user) {
+      console.error(`❌ User not found: ${recipient}`);
+      return null;
+    }
+    
+    console.log(`✅ User found: ${user.username} (ID: ${user.id})`);
+
+    // Create notification in storage
     const notification = await Notification.create({
       recipient_id: recipient,
       type,
@@ -23,17 +33,7 @@ exports.createNotification = async (data) => {
       related_chat_id: relatedChat || null
     });
 
-    console.log(`✅ Notification created in DB (ID: ${notification.id})`);
-
-    // ดึงข้อมูลผู้ใช้
-    const user = await User.findById(recipient);
-
-    if (!user) {
-      console.error(`❌ User not found: ${recipient}`);
-      return notification;
-    }
-    
-    console.log(`✅ User found: ${user.username} (ID: ${user.id})`);
+    console.log(`✅ Notification created (ID: ${notification.id})`);
 
     // ส่งการแจ้งเตือนแบบเรียลไทม์ผ่าน Socket.IO
     try {
@@ -52,7 +52,6 @@ exports.createNotification = async (data) => {
       });
       
       console.log(`✅ Notification sent to ${roomName}`);
-      console.log(`   Active rooms: ${Array.from(io.sockets.adapter.rooms.keys()).join(', ')}`);
     } catch (socketError) {
       console.error('❌ Socket.IO instance not available:', socketError.message);
     }
@@ -66,25 +65,33 @@ exports.createNotification = async (data) => {
 
 
 /**
- * สร้างการแจ้งเตือนแบบกลุ่ม
+ * สร้างการแจ้งเตือนแบบกลุ่ม (Persisted in-memory storage)
  */
 exports.createBatchNotifications = async (notifications) => {
   try {
     const created = [];
     
     for (const notif of notifications) {
-      const result = await Notification.create(notif);
-      created.push(result);
+      const notification = await Notification.create({
+        recipient_id: notif.recipient_id,
+        type: notif.type,
+        title: notif.title,
+        message: notif.message,
+        related_item_id: notif.related_item_id || null,
+        related_chat_id: notif.related_chat_id || null
+      });
+      
+      created.push(notification);
       
       // ส่งการแจ้งเตือนแบบเรียลไทม์
       try {
         const io = socketManager.getIO();
         io.to(notif.recipient_id.toString()).emit('notification', {
-          id: result.id,
-          type: result.type,
-          title: result.title,
-          message: result.message,
-          createdAt: result.created_at
+          id: notification.id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          createdAt: notification.created_at
         });
       } catch (socketError) {
         console.error('Socket.IO error in batch notifications:', socketError.message);
