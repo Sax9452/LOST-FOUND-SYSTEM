@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { itemService } from '../api/services';
 import ItemCard from '../components/Items/ItemCard';
@@ -17,18 +17,17 @@ const MyItems = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    filterItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, items]);
-
-  const filterItems = () => {
+  const filterItems = useCallback(() => {
     if (filter === 'all') {
       setFilteredItems(items);
     } else {
       setFilteredItems(items.filter(item => item.status === filter));
     }
-  };
+  }, [filter, items]);
+
+  useEffect(() => {
+    filterItems();
+  }, [filterItems]);
 
   const fetchMyItems = async () => {
     try {
@@ -57,7 +56,7 @@ const MyItems = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-28 pb-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">{t('items.myItems.title')}</h1>
         <Link to="/post" className="btn-primary">

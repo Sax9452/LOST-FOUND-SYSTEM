@@ -176,6 +176,11 @@ module.exports = (io) => {
    * @param {object} message - Message object
    */
   io.emitNewMessage = (chatRoomId, message) => {
+    if (!chatRoomId || !message) {
+      console.warn('emitNewMessage called with invalid parameters:', { chatRoomId, message });
+      return;
+    }
+    
     const roomName = `chat_${chatRoomId}`;
     console.log(`📨 Emitting new message to room: ${roomName}`);
     console.log(`   Message:`, message);
@@ -195,6 +200,11 @@ module.exports = (io) => {
    * @param {object} notification - Notification object
    */
   io.emitNotification = (userId, notification) => {
+    if (!userId) {
+      console.warn('emitNotification called with undefined userId');
+      return;
+    }
+    
     const roomName = `user_${userId}`;
     console.log(`🔔 Emitting notification to user: ${userId}`);
     
@@ -207,11 +217,16 @@ module.exports = (io) => {
    * @param {number} unreadCount - Unread message count
    */
   io.emitUnreadCount = (userId, unreadCount) => {
+    if (!userId) {
+      console.warn('emitUnreadCount called with undefined userId');
+      return;
+    }
+    
     const roomName = `user_${userId}`;
     console.log(`📊 Emitting unread count to user ${userId}: ${unreadCount}`);
     
     io.to(roomName).emit('unread_count_update', {
-      unreadCount
+      unreadCount: unreadCount || 0
     });
   };
 

@@ -1,260 +1,138 @@
-// Use in-memory storage instead of database
-const UserStorage = require('../utils/inMemoryStorage');
-const ItemStorage = require('../utils/inMemoryItemStorage');
-const ChatStorage = require('../utils/inMemoryChatStorage');
-const NotificationStorage = require('../utils/inMemoryNotificationStorage');
+// MySQL Database Models
+const UserModel = require('./mysql/UserModel');
+const ItemModel = require('./mysql/ItemModel');
+const ChatModel = require('./mysql/ChatModel');
+const MessageModel = require('./mysql/MessageModel');
+const NotificationModel = require('./mysql/NotificationModel');
 
-// User Model - Uses in-memory storage
+// User Model - MySQL Implementation
 const User = {
   async create(userData) {
-    return UserStorage.create(userData);
+    return UserModel.create(userData);
   },
 
   async findByEmail(email) {
-    return UserStorage.findByEmail(email);
+    return UserModel.findByEmail(email);
   },
 
   async findById(id) {
-    return UserStorage.findById(id);
+    return UserModel.findById(id);
   },
 
   async update(id, userData) {
-    return UserStorage.update(id, userData);
+    return UserModel.update(id, userData);
   }
 };
 
-// Item Model
+// Item Model - MySQL Implementation
 const Item = {
   async create(itemData) {
-    return ItemStorage.create(itemData);
+    return ItemModel.create(itemData);
   },
 
   async findAll(filters = {}, limit = 12, offset = 0, orderBy = 'created_at DESC', excludeOwnerId = null) {
-    const items = ItemStorage.findAll(filters, limit, offset, orderBy, excludeOwnerId);
-    // Populate owner_username from User
-    return items.map(item => {
-      const owner = UserStorage.findById(item.owner_id);
-      return {
-        ...item,
-        owner_username: owner ? owner.username : 'Unknown'
-      };
-    });
+    return ItemModel.findAll(filters, limit, offset, orderBy, excludeOwnerId);
   },
 
   async findById(id) {
-    const item = ItemStorage.findById(id);
-    if (!item) return null;
-    
-    const owner = UserStorage.findById(item.owner_id);
-    return {
-      ...item,
-      owner_username: owner ? owner.username : 'Unknown',
-      owner_email: owner ? owner.email : null,
-      owner_phone: owner ? owner.phone : null
-    };
+    return ItemModel.findById(id);
   },
 
-  async search(searchTerm, filters = {}, excludeOwnerId = null) {
-    const items = ItemStorage.search(searchTerm, filters, excludeOwnerId);
-    return items.map(item => {
-      const owner = UserStorage.findById(item.owner_id);
-      return {
-        ...item,
-        owner_username: owner ? owner.username : 'Unknown'
-      };
-    });
+  async search(searchTerm, filters = {}, excludeOwnerId = null, limit = null, offset = null) {
+    return ItemModel.search(searchTerm, filters, excludeOwnerId, limit, offset);
   },
 
   async update(id, updates) {
-    return ItemStorage.update(id, updates);
+    return ItemModel.update(id, updates);
   },
 
   async delete(id) {
-    return ItemStorage.delete(id);
+    return ItemModel.delete(id);
   },
 
   async findByOwner(ownerId) {
-    return ItemStorage.findByOwner(ownerId);
+    return ItemModel.findByOwner(ownerId);
   },
 
   async incrementViews(id) {
-    ItemStorage.incrementViews(id);
+    return ItemModel.incrementViews(id);
   },
 
   async getStats() {
-    return ItemStorage.getStats();
+    return ItemModel.getStats();
+  },
+
+  async count(filters = {}, excludeOwnerId = null) {
+    return ItemModel.count(filters, excludeOwnerId);
   }
 };
 
-// Chat Room Model
+// Chat Room Model - MySQL Implementation
 const ChatRoom = {
   async getOrCreate(user1Id, user2Id) {
-    const chatRoom = ChatStorage.getOrCreateChatRoom(user1Id, user2Id);
-    
-    // Populate with user data
-    const user1 = UserStorage.findById(chatRoom.user1_id);
-    const user2 = UserStorage.findById(chatRoom.user2_id);
-    
-    return {
-      id: chatRoom.id,
-      user1_id: chatRoom.user1_id,
-      user2_id: chatRoom.user2_id,
-      created_at: chatRoom.created_at,
-      updated_at: chatRoom.updated_at,
-      participants: [
-        {
-          id: chatRoom.user1_id,
-          username: user1 ? user1.username : 'Unknown',
-          email: user1 ? user1.email : null
-        },
-        {
-          id: chatRoom.user2_id,
-          username: user2 ? user2.username : 'Unknown',
-          email: user2 ? user2.email : null
-        }
-      ]
-    };
+    return ChatModel.getOrCreate(user1Id, user2Id);
   },
 
   async findById(id) {
-    const chatRoom = ChatStorage.findChatRoomById(id);
-    if (!chatRoom) return null;
-    
-    const user1 = UserStorage.findById(chatRoom.user1_id);
-    const user2 = UserStorage.findById(chatRoom.user2_id);
-    
-    // Get last message
-    const allMessages = ChatStorage.findMessagesByChatRoom(id);
-    const lastMessage = allMessages[allMessages.length - 1];
-    
-    // Get unread count (will be calculated per user)
-    
-    return {
-      id: chatRoom.id,
-      created_at: chatRoom.created_at,
-      updated_at: chatRoom.updated_at,
-      participants: [
-        {
-          id: chatRoom.user1_id,
-          username: user1 ? user1.username : 'Unknown',
-          email: user1 ? user1.email : null
-        },
-        {
-          id: chatRoom.user2_id,
-          username: user2 ? user2.username : 'Unknown',
-          email: user2 ? user2.email : null
-        }
-      ],
-      lastMessage: lastMessage ? lastMessage.message_text : null,
-      lastMessageTime: lastMessage ? lastMessage.created_at : null,
-      lastMessageSenderId: lastMessage ? lastMessage.sender_id : null
-    };
+    return ChatModel.findById(id);
   },
 
   async findByUser(userId) {
-    const chatRooms = ChatStorage.findChatRoomsByUser(userId);
-    
-    return chatRooms.map(chatRoom => {
-      const user1 = UserStorage.findById(chatRoom.user1_id);
-      const user2 = UserStorage.findById(chatRoom.user2_id);
-      
-      const allMessages = ChatStorage.findMessagesByChatRoom(chatRoom.id);
-      const lastMessage = allMessages[allMessages.length - 1];
-      const unreadCount = ChatStorage.getUnreadCount(chatRoom.id, userId);
-      
-      return {
-        id: chatRoom.id,
-        created_at: chatRoom.created_at,
-        updated_at: chatRoom.updated_at,
-        participants: [
-          {
-            id: chatRoom.user1_id,
-            username: user1 ? user1.username : 'Unknown',
-            email: user1 ? user1.email : null
-          },
-          {
-            id: chatRoom.user2_id,
-            username: user2 ? user2.username : 'Unknown',
-            email: user2 ? user2.email : null
-          }
-        ],
-        lastMessage: lastMessage ? lastMessage.message_text : null,
-        lastMessageTime: lastMessage ? lastMessage.created_at : null,
-        lastMessageSenderId: lastMessage ? lastMessage.sender_id : null,
-        unreadCount
-      };
-    });
+    return ChatModel.findByUser(userId);
   },
 
   async isParticipant(chatRoomId, userId) {
-    return ChatStorage.isParticipant(chatRoomId, userId);
+    return ChatModel.isParticipant(chatRoomId, userId);
   }
 };
 
-// Message Model
+// Message Model - MySQL Implementation
 const Message = {
   async create(chatRoomId, senderId, messageText) {
-    return ChatStorage.createMessage(chatRoomId, senderId, messageText);
+    return MessageModel.create(chatRoomId, senderId, messageText);
   },
 
   async findByChatRoom(chatRoomId) {
-    const messages = ChatStorage.findMessagesByChatRoom(chatRoomId);
-    
-    return messages.map(msg => {
-      const sender = UserStorage.findById(msg.sender_id);
-      return {
-        id: msg.id,
-        chatRoomId: msg.chat_room_id,
-        messageText: msg.message_text,
-        createdAt: msg.created_at,
-        isRead: msg.is_read,
-        readAt: msg.read_at,
-      sender: {
-          id: msg.sender_id,
-          username: sender ? sender.username : 'Unknown',
-          email: sender ? sender.email : null
-      }
-      };
-    });
+    return MessageModel.findByChatRoom(chatRoomId);
   },
 
   async markAsRead(chatRoomId, userId) {
-    ChatStorage.markAsRead(chatRoomId, userId);
+    return MessageModel.markAsRead(chatRoomId, userId);
   },
 
   async getUnreadCount(chatRoomId, userId) {
-    return ChatStorage.getUnreadCount(chatRoomId, userId);
+    return MessageModel.getUnreadCount(chatRoomId, userId);
   },
 
   async getTotalUnreadCount(userId) {
-    return ChatStorage.getTotalUnreadCount(userId);
+    return MessageModel.getTotalUnreadCount(userId);
   }
 };
 
-// Notification Model
+// Notification Model - MySQL Implementation
 const Notification = {
   async create(notificationData) {
-    return NotificationStorage.create(notificationData);
+    return NotificationModel.create(notificationData);
   },
 
   async findByUser(userId, limit = 20, offset = 0) {
-    return NotificationStorage.findByUser(userId, limit, offset);
+    return NotificationModel.findByUser(userId, limit, offset);
   },
 
   async getUnreadCount(userId) {
-    return NotificationStorage.getUnreadCount(userId);
+    return NotificationModel.getUnreadCount(userId);
   },
 
   async markAsRead(id, userId) {
-    return NotificationStorage.markAsRead(id, userId);
+    return NotificationModel.markAsRead(id, userId);
   },
 
   async markAllAsRead(userId) {
-    NotificationStorage.markAllAsRead(userId);
+    return NotificationModel.markAllAsRead(userId);
   },
 
   async delete(id, userId) {
-    return NotificationStorage.delete(id, userId);
+    return NotificationModel.delete(id, userId);
   }
 };
 

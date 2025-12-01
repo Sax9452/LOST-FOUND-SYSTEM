@@ -1,0 +1,7 @@
+SET FOREIGN_KEY_CHECKS = 0;
+DELETE FROM notifications;
+DELETE FROM messages;
+DELETE FROM chat_rooms;
+DELETE FROM items;
+DELETE FROM users;
+SET FOREIGN_KEY_CHECKS = 1;

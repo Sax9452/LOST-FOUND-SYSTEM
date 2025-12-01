@@ -162,23 +162,41 @@ exports.sendMessage = async (req, res, next) => {
       io.emitNewMessage(chatRoomId, messageWithSender);
       
       // Update unread count for recipient (not sender)
-      const chatRoom = await ChatRoom.findById(chatRoomId);
-      if (chatRoom) {
-        const recipientId = chatRoom.user1_id === req.user.id 
-          ? chatRoom.user2_id 
-          : chatRoom.user1_id;
-        
-        // Get unread count for recipient (will increase by 1)
-        const recipientUnreadCount = await Message.getTotalUnreadCount(recipientId);
-        io.emitUnreadCount(recipientId, recipientUnreadCount);
-        
-        // Only emit for sender if they have unread messages in other rooms
-        // (sender's current room should already be marked as read if they're viewing it)
-        const senderUnreadCount = await Message.getTotalUnreadCount(req.user.id);
-        // Only emit if sender has unread messages (to avoid unnecessary emits)
-        if (senderUnreadCount > 0) {
-          io.emitUnreadCount(req.user.id, senderUnreadCount);
+      try {
+        const chatRoom = await ChatRoom.findById(chatRoomId);
+        if (chatRoom && chatRoom.participants && Array.isArray(chatRoom.participants) && chatRoom.participants.length === 2) {
+          // Find recipient from participants
+          const recipient = chatRoom.participants.find(p => p && p.id && p.id !== req.user.id);
+          
+          if (recipient && recipient.id && typeof recipient.id === 'string' && recipient.id.trim() !== '') {
+            try {
+              // Get unread count for recipient (will increase by 1)
+              const recipientUnreadCount = await Message.getTotalUnreadCount(recipient.id);
+              io.emitUnreadCount(recipient.id, recipientUnreadCount);
+            } catch (unreadError) {
+              console.error('Error getting recipient unread count:', unreadError);
+            }
+          } else {
+            console.warn('Invalid recipient ID in sendMessage:', recipient);
+          }
+          
+          // Only emit for sender if they have unread messages in other rooms
+          // (sender's current room should already be marked as read if they're viewing it)
+          if (req.user && req.user.id) {
+            try {
+              const senderUnreadCount = await Message.getTotalUnreadCount(req.user.id);
+              // Only emit if sender has unread messages (to avoid unnecessary emits)
+              if (senderUnreadCount > 0) {
+                io.emitUnreadCount(req.user.id, senderUnreadCount);
+              }
+            } catch (unreadError) {
+              console.error('Error getting sender unread count:', unreadError);
+            }
+          }
         }
+      } catch (socketError) {
+        console.error('Error updating unread count via socket:', socketError);
+        // Don't fail the request if socket update fails
       }
     }
 
@@ -210,15 +228,27 @@ exports.markAsRead = async (req, res, next) => {
       });
     }
 
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
     const previousUnreadCount = await Message.getTotalUnreadCount(req.user.id);
     await Message.markAsRead(chatRoomId, req.user.id);
 
     // Emit unread count update only if count changed
     if (io) {
-      const newUnreadCount = await Message.getTotalUnreadCount(req.user.id);
-      // Only emit if count actually changed
-      if (previousUnreadCount !== newUnreadCount) {
-        io.emitUnreadCount(req.user.id, newUnreadCount);
+      try {
+        const newUnreadCount = await Message.getTotalUnreadCount(req.user.id);
+        // Only emit if count actually changed
+        if (previousUnreadCount !== newUnreadCount) {
+          io.emitUnreadCount(req.user.id, newUnreadCount);
+        }
+      } catch (socketError) {
+        console.error('Error emitting unread count update:', socketError);
+        // Don't fail the request if socket update fails
       }
     }
 

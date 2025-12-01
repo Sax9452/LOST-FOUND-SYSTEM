@@ -64,7 +64,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 pt-28 pb-12">
       <div className="max-w-md w-full">
         <div className="card">
           <div className="text-center mb-8">

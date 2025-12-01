@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { 
   FiPackage, FiCheckCircle, FiAlertCircle, FiMessageCircle, 
-  FiTrendingUp, FiClock, FiPlusCircle
+  FiTrendingUp, FiClock, FiPlusCircle, FiArrowRight
 } from 'react-icons/fi';
 import ItemCard from '../components/Items/ItemCard';
 import toast from 'react-hot-toast';
@@ -19,6 +19,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchDashboardData = async () => {
@@ -43,7 +44,7 @@ const Dashboard = () => {
   const returnedItems = myItems.filter(item => item.status === 'returned').length;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-28 pb-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('dashboard.title')}</h1>
         <p className="text-gray-600 dark:text-gray-400">
@@ -137,8 +138,9 @@ const Dashboard = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">{t('dashboard.recentActivity')}</h2>
-          <Link to="/my-items" className="text-primary-600 hover:text-primary-700 font-medium">
-            {t('dashboard.viewAll')} →
+          <Link to="/my-items" className="text-primary-600 hover:text-primary-700 font-medium flex items-center gap-2 group transition-colors">
+            <span>{t('dashboard.viewAll')}</span>
+            <FiArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
           </Link>
         </div>
 

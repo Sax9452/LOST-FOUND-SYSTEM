@@ -17,7 +17,8 @@ exports.getItems = async (req, res, next) => {
       status = 'active',
       page = 1,
       limit = 12,
-      sort = 'created_at DESC'
+      sort = 'created_at DESC',
+      includeOwn = 'false' // Allow including own items
     } = req.query;
 
     const filters = { status };
@@ -27,15 +28,15 @@ exports.getItems = async (req, res, next) => {
     if (dateFrom) filters.dateFrom = dateFrom;
     if (dateTo) filters.dateTo = dateTo;
 
-    // Exclude current user's items if logged in
-    const excludeOwnerId = req.user ? req.user.id : null;
+    // Exclude current user's items if logged in (unless includeOwn=true)
+    const excludeOwnerId = (req.user && includeOwn !== 'true') ? req.user.id : null;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const items = await Item.findAll(filters, parseInt(limit), offset, sort, excludeOwnerId);
 
-    // Calculate total (also exclude user's items)
-    const allItems = await Item.findAll({ status }, 10000, 0, sort, excludeOwnerId);
-    const totalItems = allItems.length;
+    // Calculate total using COUNT query (more efficient than fetching all items)
+    // Use all filters to get accurate count
+    const totalItems = await Item.count(filters, excludeOwnerId);
 
     res.json({
       success: true,
@@ -49,6 +50,25 @@ exports.getItems = async (req, res, next) => {
     });
   } catch (error) {
     console.error('getItems error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      sqlState: error.sqlState,
+      sqlMessage: error.sqlMessage
+    });
+    
+    // Send more detailed error in development
+    if (process.env.NODE_ENV !== 'production') {
+      return res.status(500).json({
+        success: false,
+        message: 'เกิดข้อผิดพลาดในการดึงข้อมูล',
+        error: error.message,
+        sqlError: error.sqlMessage || null,
+        code: error.code || null
+      });
+    }
+    
     next(error);
   }
 };
@@ -57,7 +77,7 @@ exports.getItems = async (req, res, next) => {
 // @route   GET /api/items/search
 exports.searchItems = async (req, res, next) => {
   try {
-    const { q, type, category, page = 1, limit = 12 } = req.query;
+    const { q, type, category, status = 'active', page = 1, limit = 12, includeOwn = 'false' } = req.query;
 
     if (!q || !q.trim()) {
       return res.status(400).json({
@@ -66,24 +86,25 @@ exports.searchItems = async (req, res, next) => {
       });
     }
 
-    const filters = {};
+    const filters = { status };
     if (type) filters.type = type;
     if (category) filters.category = category;
 
-    // Exclude current user's items if logged in
-    const excludeOwnerId = req.user ? req.user.id : null;
+    // Exclude current user's items if logged in (unless includeOwn=true)
+    const excludeOwnerId = (req.user && includeOwn !== 'true') ? req.user.id : null;
 
-    const results = await Item.search(q.trim(), filters, excludeOwnerId);
+    // Use SQL pagination instead of in-memory slicing for better performance
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedResults = results.slice(offset, offset + parseInt(limit));
+    const results = await Item.search(q.trim(), filters, excludeOwnerId, parseInt(limit), offset);
+    const totalResults = await Item.count({ ...filters, searchTerm: q.trim() }, excludeOwnerId);
 
     res.json({
       success: true,
-      items: paginatedResults,
+      items: results,
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(results.length / parseInt(limit)),
-        totalItems: results.length,
+        totalPages: Math.ceil(totalResults / parseInt(limit)),
+        totalItems: totalResults,
         itemsPerPage: parseInt(limit)
       }
     });
@@ -226,10 +247,6 @@ exports.createItem = async (req, res, next) => {
 // @route   PUT /api/items/:id
 exports.updateItem = async (req, res, next) => {
   try {
-    const path = require('path');
-    const fs = require('fs');
-    const sharp = require('sharp');
-    
     const item = await Item.findById(req.params.id);
 
     if (!item) {
@@ -382,7 +399,9 @@ exports.updateStatus = async (req, res, next) => {
     
     // Get allowed transitions based on item type (lost/found)
     const getAllowedTransitions = (itemType, currentStatus) => {
-      if (currentStatus === 'archived') return [];
+      // Allow unarchiving: archived -> active (to reopen the listing)
+      if (currentStatus === 'archived') return ['active'];
+      
       if (currentStatus === 'pending') return ['active', 'archived'];
       if (currentStatus === 'returned') return ['archived'];
       

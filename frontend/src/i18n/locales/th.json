@@ -100,6 +100,11 @@
     }
   },
   "items": {
+    "title": "รายการทั้งหมด",
+    "subtitle": "เรียกดูรายการของหายและของพบทั้งหมด",
+    "filters": "ตัวกรอง",
+    "noItemsFound": "ไม่พบรายการที่ตรงกับตัวกรองของคุณ ลองปรับตัวกรอง",
+    "clearFilters": "ล้างตัวกรอง",
     "type": {
       "lost": "ของหาย",
       "found": "เจอของ"
@@ -131,6 +136,7 @@
       "other": "อื่นๆ"
     },
     "status": {
+      "title": "สถานะ",
       "active": "กำลังหา",
       "pending": "รอดำเนินการ",
       "matched": "จับคู่แล้ว",
@@ -180,7 +186,9 @@
       "update": "อัปเดต",
       "noStatusChange": "ไม่สามารถเปลี่ยนสถานะได้",
       "cannotChangeStatus": "ไม่สามารถเปลี่ยนสถานะจาก archived ได้",
-      "selectMatchedItem": "เลือกสิ่งของที่ตรงกัน"
+      "selectMatchedItem": "เลือกสิ่งของที่ตรงกัน",
+      "dateLostFound": "วันที่หาย/เจอ",
+      "postedBy": "ลงประกาศโดย"
     },
     "post": {
       "title": "ลงประกาศ",
@@ -230,6 +238,7 @@
     },
     "search": {
       "title": "ค้นหาสิ่งของ",
+      "subtitle": "ค้นหาสิ่งที่คุณต้องการหรือช่วยผู้อื่นค้นหาของที่หาย",
       "searchPlaceholder": "ค้นหาด้วยชื่อ, คำอธิบาย...",
       "noResults": "ไม่พบผลลัพธ์",
       "results": "ผลลัพธ์",
@@ -254,7 +263,8 @@
       "previous": "ก่อนหน้า",
       "next": "ถัดไป",
       "page": "หน้า {{current}} จาก {{total}}",
-      "noItemsFound": "ไม่พบรายการ ลองค้นหาหรือกรองคำอื่น"
+      "noItemsFound": "ไม่พบรายการ ลองค้นหาหรือกรองคำอื่น",
+      "clearFilters": "ล้างตัวกรอง"
     },
     "myItems": {
       "title": "ของของฉัน",
@@ -293,7 +303,8 @@
     "failedToLoadChatRooms": "ไม่สามารถโหลดการสนทนา",
     "failedToLoadMessages": "ไม่สามารถโหลดข้อความ",
     "failedToSendMessage": "ไม่สามารถส่งข้อความ",
-    "newMessageReceived": "มีข้อความใหม่"
+    "newMessageReceived": "มีข้อความใหม่",
+    "errorFetchingRooms": "ไม่สามารถโหลดการสนทนา"
   },
   "notifications": {
     "title": "การแจ้งเตือน",
@@ -302,7 +313,8 @@
     "markAllRead": "ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว",
     "markAsRead": "ทำเครื่องหมายว่าอ่านแล้ว",
     "markReadSuccess": "ทำเครื่องหมายว่าอ่านแล้ว",
-    "viewItem": "ดูสิ่งของ",
+    "viewItem": "ดูสิ่งของ: {{itemName}}",
+    "viewMatchedItem": "ดูสิ่งของที่ตรงกัน",
     "viewChat": "ดูแชท",
     "markReadError": "ไม่สามารถทำเครื่องหมายว่าอ่านแล้ว",
     "markAllReadSuccess": "ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว",
@@ -382,13 +394,17 @@
     "matched": "จับคู่แล้ว",
     "returned": "คืนเจ้าของแล้ว",
     "viewAndManage": "ดูและจัดการประกาศของคุณ",
+    "reportLostFound": "รายงานของหายหรือของพบ",
+    "myItems": "ของของฉัน",
+    "messages": "ข้อความ",
     "noItemsYet": "ยังไม่มีรายการ",
     "startPosting": "เริ่มจากการลงประกาศรายการแรกที่หายหรือพบ",
     "postItem": "ลงประกาศ",
     "communityImpact": "ผลกระทบต่อชุมชน",
     "successfullyReturned": "คืนเจ้าของแล้ว",
     "activeListings": "รายการที่ใช้งานอยู่",
-    "successRate": "อัตราความสำเร็จ"
+    "successRate": "อัตราความสำเร็จ",
+    "viewAll": "ดูทั้งหมด"
   },
   "admin": {
     "title": "ผู้ดูแลระบบ",

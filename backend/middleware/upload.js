@@ -31,16 +31,25 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter
+// File filter with strict MIME type checking
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  // Whitelist of allowed MIME types (more secure than regex)
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp'
+  ];
+  
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  const mimetype = file.mimetype.toLowerCase();
 
-  if (mimetype && extname) {
+  // Check both extension and MIME type
+  if (allowedExtensions.includes(ext) && allowedMimeTypes.includes(mimetype)) {
     return cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp)'));
+    cb(new Error('Only image files are allowed (jpeg, jpg, png, webp). Invalid file type or extension.'));
   }
 };
 

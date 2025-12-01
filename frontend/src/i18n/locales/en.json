@@ -95,7 +95,8 @@
     },
     "recentItems": {
       "title": "Recent Items",
-      "viewAll": "View All"
+      "viewAll": "View All",
+      "noItems": "No items found"
     }
   },
   "items": {
@@ -130,6 +131,7 @@
       "other": "Other"
     },
     "status": {
+      "title": "Status",
       "active": "Active",
       "pending": "Pending",
       "matched": "Matched",
@@ -178,7 +180,9 @@
       "update": "Update",
       "noStatusChange": "No status change available",
       "cannotChangeStatus": "Cannot change status from archived",
-      "selectMatchedItem": "Select Matched Item"
+      "selectMatchedItem": "Select Matched Item",
+      "dateLostFound": "Date Lost/Found",
+      "postedBy": "Posted By"
     },
     "post": {
       "title": "Post an Item",
@@ -228,14 +232,33 @@
     },
     "search": {
       "title": "Search Items",
+      "subtitle": "Find what you're looking for or help others find their lost items.",
       "searchPlaceholder": "Search by name, description...",
+      "searchByKeyword": "Search by keyword...",
+      "searchButton": "Search",
+      "filters": "Filters",
       "noResults": "No results found",
       "results": "Results",
+      "type": "Type",
+      "category": "Category",
       "location": "Location",
       "locationPlaceholder": "Enter location...",
       "dateFrom": "Date From",
       "dateTo": "Date To",
-      "selectDate": "Select Date"
+      "selectDate": "Select Date",
+      "sortBy": "Sort By",
+      "all": "All",
+      "allCategories": "All Categories",
+      "newestFirst": "Newest First",
+      "oldestFirst": "Oldest First",
+      "mostRecentDate": "Most Recent Date",
+      "clearAllFilters": "Clear All Filters",
+      "showingResults": "Showing {{count}} items",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{current}} of {{total}}",
+      "noItemsFound": "We couldn't find any items matching your search. Try adjusting your filters or search terms.",
+      "clearFilters": "Clear Filters"
     },
     "myItems": {
       "title": "My Items",
@@ -274,7 +297,8 @@
     "failedToLoadChatRooms": "Failed to load chat rooms",
     "failedToLoadMessages": "Failed to load messages",
     "failedToSendMessage": "Failed to send message",
-    "newMessageReceived": "New message received"
+    "newMessageReceived": "New message received",
+    "errorFetchingRooms": "Failed to load chat rooms"
   },
   "notifications": {
     "title": "Notifications",
@@ -283,7 +307,8 @@
     "markAllRead": "Mark All as Read",
     "markAsRead": "Mark as read",
     "markReadSuccess": "Marked as read",
-    "viewItem": "View Item",
+    "viewItem": "View Item: {{itemName}}",
+    "viewMatchedItem": "View Matched Item",
     "viewChat": "View Chat",
     "markReadError": "Failed to mark as read",
     "markAllReadSuccess": "All notifications marked as read",
@@ -372,13 +397,16 @@
     "returned": "Returned",
     "viewAndManage": "View and manage your posts",
     "reportLostFound": "Report a lost or found item",
+    "myItems": "My Items",
+    "messages": "Messages",
     "noItemsYet": "No Items Yet",
     "startPosting": "Start by posting your first lost or found item",
     "postItem": "Post Item",
     "communityImpact": "Community Impact",
     "successfullyReturned": "Successfully Returned",
     "activeListings": "Active Listings",
-    "successRate": "Success Rate"
+    "successRate": "Success Rate",
+    "viewAll": "View All"
   },
   "admin": {
     "title": "Admin Panel",

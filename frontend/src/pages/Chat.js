@@ -115,10 +115,13 @@ const Chat = () => {
     if (selectedChatRoom && socket) {
       const roomId = String(selectedChatRoom.id);
       
+      // Capture ref value at the start of the effect for cleanup
+      const joinedRooms = joinedRoomsRef.current;
+      
       // Only join if not already joined
-      if (!joinedRoomsRef.current.has(roomId)) {
+      if (!joinedRooms.has(roomId)) {
         socket.emit('join_chat', selectedChatRoom.id);
-        joinedRoomsRef.current.add(roomId);
+        joinedRooms.add(roomId);
         console.log('📨 Joined chat room:', selectedChatRoom.id);
       }
       
@@ -237,10 +240,10 @@ const Chat = () => {
         const roomId = String(selectedChatRoom.id);
         
         // Only leave if we actually joined
-        if (joinedRoomsRef.current.has(roomId)) {
+        if (joinedRooms.has(roomId)) {
           socket.emit('leave_chat', selectedChatRoom.id);
           socket.emit('typing_stop', { chatRoomId: selectedChatRoom.id });
-          joinedRoomsRef.current.delete(roomId);
+          joinedRooms.delete(roomId);
         }
         
         socket.off('new_message', handleNewMessage);
@@ -423,7 +426,7 @@ const Chat = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-28 pb-8">
         <div className="flex justify-center py-12">
           <div className="spinner"></div>
         </div>
@@ -432,7 +435,7 @@ const Chat = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-28 pb-8">
       <h1 className="text-3xl font-bold mb-8">{t('chat.messages')}</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">

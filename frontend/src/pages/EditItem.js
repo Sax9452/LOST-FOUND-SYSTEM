@@ -188,7 +188,7 @@ const EditItem = () => {
 
   if (loadingItem) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-28 pb-8">
         <div className="flex justify-center py-12">
           <div className="spinner"></div>
         </div>
@@ -197,7 +197,7 @@ const EditItem = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-28 pb-8">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">{t('items.details.editItem')}</h1>

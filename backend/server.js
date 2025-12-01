@@ -110,14 +110,27 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/items', require('./routes/items'));
 app.use('/api/chats', require('./routes/chat'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/translate', require('./routes/translate'));
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Server is running with in-memory storage',
-    storage: 'in-memory'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    const pool = require('./config/database');
+    await pool.getConnection();
+    res.json({ 
+      status: 'OK', 
+      message: 'Server is running with MySQL database',
+      storage: 'MySQL',
+      database: process.env.DB_NAME || 'lostfound'
+    });
+  } catch (error) {
+    res.status(503).json({ 
+      status: 'ERROR', 
+      message: 'Database connection failed',
+      storage: 'MySQL',
+      error: error.message
+    });
+  }
 });
 
 // Error handling middleware (enhanced security)
@@ -163,7 +176,8 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Storage: In-Memory (no database required)`);
+  console.log(`📊 Storage: MySQL (${process.env.DB_NAME || 'lostfound'})`);
+  console.log(`💾 Database: ${process.env.DB_HOST || 'localhost'}`);
 });
 
 

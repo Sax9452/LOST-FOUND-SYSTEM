@@ -2,22 +2,22 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { itemService } from '../api/services';
 import ItemCard from '../components/Items/ItemCard';
-import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
+import { FiFilter, FiX } from 'react-icons/fi';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import toast from 'react-hot-toast';
 
-const Search = () => {
+const Items = () => {
   const { t } = useTranslation();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     type: '',
     category: '',
     location: '',
     dateFrom: '',
     dateTo: '',
+    status: 'active', // Default to active items
     sort: 'created_at DESC'
   });
   const [showFilters, setShowFilters] = useState(false);
@@ -35,13 +35,20 @@ const Search = () => {
     { value: 'other', label: t('items.category.other') }
   ];
 
+  const STATUS_OPTIONS = [
+    { value: 'active', label: t('items.status.active') },
+    { value: 'pending', label: t('items.status.pending') },
+    { value: 'matched', label: t('items.status.matched') },
+    { value: 'returned', label: t('items.status.returned') },
+    { value: 'archived', label: t('items.status.archived') }
+  ];
+
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
       const params = {
         page: currentPage,
         limit: 12,
-        status: 'active',
         ...filters
       };
 
@@ -63,46 +70,11 @@ const Search = () => {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, filters.type, filters.category, filters.location, filters.dateFrom, filters.dateTo, filters.sort]);
+  }, [currentPage, filters.type, filters.category, filters.location, filters.dateFrom, filters.dateTo, filters.status, filters.sort]);
 
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      fetchItems();
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const params = {
-        q: searchQuery,
-        page: currentPage,
-        limit: 12,
-        ...filters
-      };
-
-      // Remove empty filters
-      Object.keys(params).forEach(key => {
-        if (!params[key] || key === 'sort') delete params[key];
-      });
-
-      const response = await itemService.searchItems(params);
-      setItems(response.data.items || []);
-      setPagination(response.data.pagination || {});
-    } catch (error) {
-      console.error('Error searching items:', error);
-      const errorMessage = error.response?.data?.message || t('items.search.noResults');
-      toast.error(errorMessage);
-      setItems([]);
-      setPagination(null);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
@@ -110,8 +82,15 @@ const Search = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ type: '', category: '', location: '', dateFrom: '', dateTo: '', sort: 'created_at DESC' });
-    setSearchQuery('');
+    setFilters({ 
+      type: '', 
+      category: '', 
+      location: '', 
+      dateFrom: '', 
+      dateTo: '', 
+      status: 'active',
+      sort: 'created_at DESC' 
+    });
     setCurrentPage(1);
   };
 
@@ -120,39 +99,24 @@ const Search = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 md:mb-12 animate-fade-in">
           <div className="mb-4 md:mb-0">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3">{t('items.search.title')}</h1>
-            <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg">{t('items.search.subtitle')}</p>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3">{t('items.title')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg">{t('items.subtitle')}</p>
           </div>
         </div>
 
-        {/* Search & Filter Section */}
+        {/* Filter Section */}
         <div className="glass rounded-3xl p-6 md:p-8 mb-10 md:mb-12 animate-slide-up shadow-xl border border-white/20 dark:border-gray-700/50">
-          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 z-10" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 md:py-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-base"
-                placeholder={t('items.search.searchByKeyword')}
-                autoComplete="off"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button type="submit" className="btn-primary px-8 py-3.5 md:py-4 text-base font-semibold">
-                {t('items.search.searchButton')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`btn-secondary flex items-center px-6 py-3.5 md:py-4 text-base font-semibold transition-all ${showFilters ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700' : ''}`}
-              >
-                <FiFilter className="mr-2" />
-                {t('items.search.filters')}
-              </button>
-            </div>
-          </form>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{t('items.filters')}</h2>
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`btn-secondary flex items-center px-6 py-3.5 md:py-4 text-base font-semibold transition-all ${showFilters ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-300 dark:border-primary-700' : ''}`}
+            >
+              <FiFilter className="mr-2" />
+              {t('items.search.filters')}
+            </button>
+          </div>
 
           {/* Filters */}
           {showFilters && (
@@ -181,6 +145,19 @@ const Search = () => {
                     <option value="">{t('items.search.allCategories')}</option>
                     {CATEGORIES.map(cat => (
                       <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('items.status.title', 'Status')}</label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    className="input-field"
+                  >
+                    {STATUS_OPTIONS.map(status => (
+                      <option key={status.value} value={status.value}>{status.label}</option>
                     ))}
                   </select>
                 </div>
@@ -295,14 +272,14 @@ const Search = () => {
         ) : (
           <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 animate-fade-in">
             <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FiSearch className="w-10 h-10 text-gray-400" />
+              <FiFilter className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('items.search.noResults')}</h3>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('items.search.noItemsFound')}</h3>
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-              {t('items.search.noItemsFound')}
+              {t('items.noItemsFound')}
             </p>
             <button onClick={clearFilters} className="btn-primary mt-6">
-              {t('items.search.clearFilters')}
+              {t('items.clearFilters')}
             </button>
           </div>
         )}
@@ -311,4 +288,5 @@ const Search = () => {
   );
 };
 
-export default Search;
+export default Items;
+

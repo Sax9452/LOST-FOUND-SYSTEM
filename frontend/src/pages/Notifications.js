@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { notificationService } from '../api/services';
 import { useApp } from '../context/AppContext';
 import { format } from 'date-fns';
-import { FiBell, FiCheck, FiTrash2 } from 'react-icons/fi';
+import { FiBell, FiCheck, FiTrash2, FiPackage, FiArrowRight } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useTranslateText } from '../hooks/useTranslate';
 
 const Notifications = () => {
   const { t } = useTranslation();
@@ -64,7 +66,7 @@ const Notifications = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-28 pb-8">
         <div className="flex justify-center py-12">
           <div className="spinner"></div>
         </div>
@@ -74,8 +76,14 @@ const Notifications = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Component สำหรับแปลชื่อ item ใน notification
+  const NotificationItemName = ({ itemName }) => {
+    const translated = useTranslateText(itemName);
+    return <>{t('notifications.viewItem', { itemName: translated })}</>;
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 pt-28 pb-8">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">{t('notifications.title')}</h1>
         {unreadCount > 0 && (
@@ -96,10 +104,24 @@ const Notifications = () => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-start space-x-3">
-                    <FiBell className={`w-5 h-5 mt-1 ${!notification.read ? 'text-primary-600' : 'text-gray-400'}`} />
+                    {notification.type === 'match' ? (
+                      <FiPackage className={`w-5 h-5 mt-1 ${!notification.read ? 'text-primary-600' : 'text-gray-400'}`} />
+                    ) : (
+                      <FiBell className={`w-5 h-5 mt-1 ${!notification.read ? 'text-primary-600' : 'text-gray-400'}`} />
+                    )}
                     <div className="flex-1">
                       <h3 className="font-semibold mb-1">{notification.title}</h3>
                       <p className="text-gray-600 dark:text-gray-400">{notification.message}</p>
+                      {notification.related_item_id || notification.item_id ? (
+                        <Link
+                          to={`/items/${notification.related_item_id || notification.item_id}`}
+                          className="inline-flex items-center mt-3 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium text-sm transition-colors"
+                        >
+                          <FiPackage className="w-4 h-4 mr-2" />
+                          {notification.item_name ? <NotificationItemName itemName={notification.item_name} /> : t('notifications.viewMatchedItem')}
+                          <FiArrowRight className="w-4 h-4 ml-1" />
+                        </Link>
+                      ) : null}
                       <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                         {format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
                       </p>

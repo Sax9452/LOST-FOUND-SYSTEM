@@ -183,9 +183,9 @@ exports.updatePassword = async (req, res, next) => {
       });
     }
 
-    // เข้ารหัสรหัสผ่านใหม่
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    // เข้ารหัสรหัสผ่านใหม่ (ใช้ BCRYPT_ROUNDS จาก env เพื่อความสม่ำเสมอ)
+    const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
     await User.update(req.user.id, { password: hashedPassword });
 

@@ -15,6 +15,7 @@ import PostItem from './pages/PostItem';
 import EditItem from './pages/EditItem';
 import ItemDetails from './pages/ItemDetails';
 import Search from './pages/Search';
+import Items from './pages/Items';
 import Dashboard from './pages/Dashboard';
 import MyItems from './pages/MyItems';
 import Chat from './pages/Chat';
@@ -72,6 +73,7 @@ function App() {
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Register />} />
                 <Route path="search" element={<Search />} />
+                <Route path="items" element={<Items />} />
                 <Route path="items/:id" element={<ItemDetails />} />
                 
                 {/* Protected Routes */}

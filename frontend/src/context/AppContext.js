@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthContext';
@@ -23,6 +23,25 @@ export const AppProvider = ({ children }) => {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [darkMode, setDarkMode] = useState(true); // Default to dark mode
   const [language, setLanguage] = useState('en');
+  const socketRef = useRef(null); // Keep reference to socket to prevent unnecessary reconnections
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const response = await notificationService.getUnreadCount();
+      setUnreadNotifications(response.data.unreadCount);
+    } catch (error) {
+      console.error('Error fetching unread notifications:', error);
+    }
+  }, []);
+
+  const fetchUnreadMessages = useCallback(async () => {
+    try {
+      const response = await chatService.getUnreadCount();
+      setUnreadMessages(response.data.unreadCount || 0);
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+    }
+  }, []);
 
   useEffect(() => {
     // Check dark mode preference (default to true if not set)
@@ -47,14 +66,16 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    // Only create socket if authenticated and user exists, and socket doesn't exist yet
+    if (isAuthenticated && user && !socketRef.current) {
       // Initialize socket connection
       const token = localStorage.getItem('token');
       const newSocket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
         auth: { token },
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5
+        reconnectionAttempts: 5,
+        transports: ['websocket', 'polling'] // Allow both transports
       });
 
       newSocket.on('connect', () => {
@@ -66,6 +87,11 @@ export const AppProvider = ({ children }) => {
 
       newSocket.on('disconnect', (reason) => {
         console.log('❌ Socket disconnected:', reason);
+        // Clear ref if disconnected
+        if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+          socketRef.current = null;
+          setSocket(null);
+        }
       });
 
       newSocket.on('connect_error', (error) => {
@@ -103,6 +129,7 @@ export const AppProvider = ({ children }) => {
         setUnreadMessages(data.unreadCount || 0);
       });
 
+      socketRef.current = newSocket;
       setSocket(newSocket);
 
       // Fetch initial counts
@@ -110,36 +137,26 @@ export const AppProvider = ({ children }) => {
       fetchUnreadMessages();
 
       return () => {
-        console.log('🔌 Disconnecting socket...');
-        newSocket.disconnect();
+        // Only disconnect if this is still the current socket
+        if (socketRef.current === newSocket) {
+          console.log('🔌 Disconnecting socket...');
+          newSocket.disconnect();
+          socketRef.current = null;
+          setSocket(null);
+        }
       };
-    } else {
+    } else if (!isAuthenticated || !user) {
       // Clear socket if not authenticated
-      if (socket) {
-        socket.disconnect();
+      if (socketRef.current) {
+        console.log('🔌 Disconnecting socket (not authenticated)...');
+        socketRef.current.disconnect();
+        socketRef.current = null;
         setSocket(null);
       }
     }
+    // Only depend on isAuthenticated and user.id (not the whole user object)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, user]);
-
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const response = await notificationService.getUnreadCount();
-      setUnreadNotifications(response.data.unreadCount);
-    } catch (error) {
-      console.error('Error fetching unread notifications:', error);
-    }
-  }, []);
-
-  const fetchUnreadMessages = useCallback(async () => {
-    try {
-      const response = await chatService.getUnreadCount();
-      setUnreadMessages(response.data.unreadCount || 0);
-    } catch (error) {
-      console.error('Error fetching unread messages:', error);
-    }
-  }, []);
+  }, [isAuthenticated, user?.id]);
 
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
